@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import click
 import os
 
+import click
 from ebi_eva_common_pyutils.command_utils import run_command_with_output
 from ebi_eva_common_pyutils.logger import logging_config
 
-from run_release_in_embassy.release_metadata import release_vcf_file_categories, release_text_file_categories
 from run_release_in_embassy.release_common_utils import get_release_vcf_file_name_genbank, get_release_text_file_name
+from run_release_in_embassy.release_metadata import release_vcf_file_categories, release_text_file_categories
 
 
 def count_rs_ids_in_release_files(count_ids_script_path, taxonomy_id, assembly_accession, assembly_release_folder):
@@ -27,14 +27,16 @@ def count_rs_ids_in_release_files(count_ids_script_path, taxonomy_id, assembly_a
     with open(release_count_filename, "w") as release_count_file_handle:
         release_count_file_handle.write("# Unique RS ID counts\n")
         for vcf_file_category in release_vcf_file_categories:
-            release_vcf_file_name = get_release_vcf_file_name_genbank(assembly_release_folder, taxonomy_id, assembly_accession,
-                                                              vcf_file_category)
+            release_vcf_file_name = get_release_vcf_file_name_genbank(assembly_release_folder, taxonomy_id,
+                                                                      assembly_accession,
+                                                                      vcf_file_category)
             num_ids_in_file = run_command_with_output("Counting RS IDs in file: " + release_vcf_file_name,
                                                       "{0} {1}.gz".format(count_ids_script_path, release_vcf_file_name),
                                                       return_process_output=True)
             release_count_file_handle.write(num_ids_in_file)
         for text_release_file_category in release_text_file_categories:
-            text_release_file_name = get_release_text_file_name(assembly_release_folder, taxonomy_id, assembly_accession,
+            text_release_file_name = get_release_text_file_name(assembly_release_folder, taxonomy_id,
+                                                                assembly_accession,
                                                                 text_release_file_category)
             num_ids_in_file = run_command_with_output("Counting RS IDs in file: " + text_release_file_name,
                                                       "zcat {0}.gz | cut -f1 | uniq | wc -l"

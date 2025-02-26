@@ -16,17 +16,17 @@
 # the script incorporate_mapping_weight_into_accessioning.py
 
 
-import click
 import logging
 import os
-
 from collections import defaultdict
 from itertools import islice
+
+import click
+from ebi_eva_common_pyutils.command_utils import run_command_with_output
+from ebi_eva_common_pyutils.config_utils import get_mongo_uri_for_eva_profile
+from ebi_eva_common_pyutils.file_utils import file_diff, FileDiffOption
 from pymongo import MongoClient
 
-from ebi_eva_common_pyutils.config_utils import get_mongo_uri_for_eva_profile
-from ebi_eva_common_pyutils.command_utils import run_command_with_output
-from ebi_eva_common_pyutils.file_utils import file_diff, FileDiffOption
 from include_mapping_weight_from_dbsnp.incorporate_mapping_weight_into_accessioning import collections_to_update \
     as collection_attribute_paths
 

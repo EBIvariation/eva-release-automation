@@ -11,10 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 import sys
 from argparse import ArgumentParser
-
-import os
 from functools import lru_cache
 from random import choice
 from string import ascii_lowercase
@@ -22,12 +21,13 @@ from string import ascii_lowercase
 import yaml
 from ebi_eva_common_pyutils.command_utils import run_command_with_output
 from ebi_eva_common_pyutils.common_utils import pretty_print
+from ebi_eva_common_pyutils.config import cfg
 from ebi_eva_common_pyutils.logger import logging_config
 from ebi_eva_internal_pyutils.metadata_utils import get_metadata_connection_handle
-from ebi_eva_common_pyutils.config import cfg
-from run_release_in_embassy.release_metadata import get_release_assemblies_for_taxonomy, get_release_for_status_and_version
-from run_release_in_embassy.release_common_utils import get_release_folder_name
 
+from run_release_in_embassy.release_common_utils import get_release_folder_name
+from run_release_in_embassy.release_metadata import get_release_assemblies_for_taxonomy, \
+    get_release_for_status_and_version
 
 logger = logging_config.get_logger(__name__)
 
@@ -69,11 +69,13 @@ def get_run_release_for_assembly_nextflow():
 def get_release_log_file_name(release_version, taxonomy_id, assembly_accession):
     return f"{get_assembly_release_folder(release_version, taxonomy_id, assembly_accession)}/release_{taxonomy_id}_{assembly_accession}.log"
 
+
 @lru_cache
 def get_release_folder(release_version):
     folder = os.path.join(cfg.query('release', 'release_output'), f'release_{release_version}')
     os.makedirs(folder, exist_ok=True)
     return folder
+
 
 @lru_cache
 def get_species_release_folder(release_version, taxonomy_id):

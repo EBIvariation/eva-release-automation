@@ -1,8 +1,9 @@
-import click
-import os
-import requests
 import glob
+import os
 import xml.etree.ElementTree
+
+import click
+import requests
 from ebi_eva_common_pyutils.logger import logging_config
 
 logger = logging_config.get_logger(__name__)
@@ -24,7 +25,7 @@ def get_assembly_name_for_accession(assembly_accession):
     try:
         response = requests.get(ENA_XML_API_URL)
         if response.ok:
-            return xml.etree.ElementTree.fromstring(response.content.decode(encoding="utf-8"))\
+            return xml.etree.ElementTree.fromstring(response.content.decode(encoding="utf-8")) \
                 .find("ASSEMBLY").find("NAME").text
         else:
             logger.error("API call {0} failed with response code {1}".format(ENA_XML_API_URL, response.status_code))

@@ -12,22 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import click
 import sys
 import traceback
 
+import click
+from ebi_eva_common_pyutils.command_utils import run_command_with_output
 from ebi_eva_common_pyutils.logger import logging_config
 
 from run_release_in_embassy.create_release_properties_file import create_release_properties_file_for_assembly
 from run_release_in_embassy.release_common_utils import open_mongo_port_to_tempmongo, close_mongo_port_to_tempmongo
-from ebi_eva_common_pyutils.command_utils import run_command_with_output
-
 
 logger = logging_config.get_logger(__name__)
 
 
 def run_release_for_assembly(private_config_xml_file, profile, taxonomy_id, assembly_accession,
-                             release_species_inventory_table, release_version, assembly_release_folder, release_jar_path,
+                             release_species_inventory_table, release_version, assembly_release_folder,
+                             release_jar_path,
                              memory):
     exit_code = -1
     try:
@@ -39,7 +39,7 @@ def run_release_for_assembly(private_config_xml_file, profile, taxonomy_id, asse
                                                                               taxonomy_id, assembly_accession,
                                                                               release_species_inventory_table,
                                                                               release_version, assembly_release_folder)
-        release_command = 'java -Xmx{0}g -jar {1} --spring.config.location=file:{2} --spring.data.mongodb.port={3}'\
+        release_command = 'java -Xmx{0}g -jar {1} --spring.config.location=file:{2} --spring.data.mongodb.port={3}' \
             .format(memory, release_jar_path, release_properties_file, mongo_port)
         run_command_with_output("Running release pipeline for assembly: " + assembly_accession, release_command)
         exit_code = 0
@@ -62,13 +62,14 @@ def run_release_for_assembly(private_config_xml_file, profile, taxonomy_id, asse
 @click.option("--release-version", help="ex: 2", type=int, required=True)
 @click.option("--assembly-release-folder", required=True)
 @click.option("--release-jar-path", required=True)
-@click.option("--memory",  help="Memory in GB. ex: 8", default=8, type=int, required=False)
+@click.option("--memory", help="Memory in GB. ex: 8", default=8, type=int, required=False)
 @click.command()
 def main(private_config_xml_file, profile, taxonomy_id, assembly_accession, release_species_inventory_table,
          release_version, assembly_release_folder, release_jar_path, memory):
     logging_config.add_stdout_handler()
     run_release_for_assembly(private_config_xml_file, profile, taxonomy_id, assembly_accession,
-                             release_species_inventory_table, release_version, assembly_release_folder, release_jar_path,
+                             release_species_inventory_table, release_version, assembly_release_folder,
+                             release_jar_path,
                              memory)
 
 

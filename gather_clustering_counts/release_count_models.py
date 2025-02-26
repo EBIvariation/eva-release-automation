@@ -1,8 +1,6 @@
-import sqlalchemy
 from sqlalchemy import MetaData, Column, Integer, String, ForeignKey, UniqueConstraint, BigInteger, TEXT, create_engine, \
-    URL, text, schema, ARRAY
+    URL, schema, ARRAY
 from sqlalchemy.orm import declarative_base, mapped_column, relationship
-
 
 metadata = MetaData(schema="eva_stats")
 Base = declarative_base(metadata=metadata)
@@ -22,7 +20,8 @@ class RSCountCategory(Base):
     rs_count_id = mapped_column(ForeignKey("release_rs_count.rs_count_id"))
     rs_count = relationship("RSCount", back_populates="count_categories")
     __table_args__ = (
-        UniqueConstraint('assembly_accession', 'taxonomy_id', 'rs_type', 'release_version', 'rs_count_id', name='uix_1'),
+        UniqueConstraint('assembly_accession', 'taxonomy_id', 'rs_type', 'release_version', 'rs_count_id',
+                         name='uix_1'),
     )
     schema = 'eva_stats'
 
@@ -131,6 +130,3 @@ def get_sql_alchemy_engine(dbtype, username, password, host_url, database, port)
     RSCountPerTaxonomy.__table__.create(bind=engine, checkfirst=True)
     RSCountPerTaxonomyAssembly.__table__.create(bind=engine, checkfirst=True)
     return engine
-
-
-

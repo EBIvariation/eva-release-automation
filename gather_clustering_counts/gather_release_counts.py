@@ -12,7 +12,6 @@ from ebi_eva_common_pyutils.logger import logging_config, AppLogger
 from ebi_eva_internal_pyutils.config_utils import get_metadata_creds_for_profile
 from ebi_eva_internal_pyutils.metadata_utils import get_metadata_connection_handle
 from ebi_eva_internal_pyutils.pg_utils import get_all_results_for_query
-
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -20,7 +19,6 @@ from gather_clustering_counts.release_count_models import RSCountCategory, RSCou
     RSCountPerTaxonomy, RSCountPerAssembly, RSCountPerTaxonomyAssembly
 
 logger = logging_config.get_logger(__name__)
-
 
 shell_script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bash')
 
@@ -51,7 +49,7 @@ def find_link(key_set, dict1, dict2, source_linked_set1=None, source_linked_set2
                     linked_set1.update(dict2.get(value1))
     # if one of the set is still growing we check again
     if linked_set1 != source_linked_set1 or linked_set2 != source_linked_set2:
-        tmp_linked_set1, tmp_linked_set2 = find_link(linked_set1-key_set, dict1, dict2, linked_set1, linked_set2)
+        tmp_linked_set1, tmp_linked_set2 = find_link(linked_set1 - key_set, dict1, dict2, linked_set1, linked_set2)
         linked_set1.update(tmp_linked_set1)
         linked_set2.update(tmp_linked_set2)
     return frozenset(linked_set1), frozenset(linked_set2)
@@ -153,6 +151,7 @@ def generate_output_tsv(dict_of_counter, output_file, header):
                 open_file.write("\t".join([
                     str(assembly_or_species), str(metric), str(dict_of_counter[assembly_or_species][metric])
                 ]) + '\n')
+
 
 class ReleaseCounter(AppLogger):
 
@@ -338,7 +337,7 @@ class ReleaseCounter(AppLogger):
                 count_prev = 0
                 if prev_count_for_assembly:
                     count_prev = getattr(prev_count_for_assembly, self._type_to_column(rs_type))
-                count_new = assembly_counts.get(assembly).get(rs_type) -count_prev
+                count_new = assembly_counts.get(assembly).get(rs_type) - count_prev
                 setattr(assembly_row, self._type_to_column(rs_type), assembly_counts.get(assembly).get(rs_type))
                 setattr(assembly_row, self._type_to_column(rs_type, is_new=True), count_new)
             session.add(assembly_row)
@@ -445,7 +444,8 @@ class ReleaseCounter(AppLogger):
         species_annotations = defaultdict(dict)
         for count_groups in self.all_counts_grouped:
             taxonomy_and_types = set([(count_dict['taxonomy'], count_dict['idtype']) for count_dict in count_groups])
-            release_folder_map = dict((count_dict['taxonomy'], count_dict['release_folder']) for count_dict in count_groups)
+            release_folder_map = dict(
+                (count_dict['taxonomy'], count_dict['release_folder']) for count_dict in count_groups)
             for taxonomy, rstype in taxonomy_and_types:
                 if taxonomy not in species_annotations:
                     species_annotations[taxonomy] = {'assemblies': set(), 'release_folder': None}
@@ -484,8 +484,10 @@ class ReleaseCounter(AppLogger):
         species_assembly_counts = defaultdict(Counter)
         species_assembly_annotations = defaultdict(dict)
         for count_groups in self.all_counts_grouped:
-            taxonomy_assembly_and_types = set([(count_dict['taxonomy'], count_dict['assembly'], count_dict['idtype']) for count_dict in count_groups])
-            release_folder_map = dict((count_dict['taxonomy'], count_dict['release_folder']) for count_dict in count_groups)
+            taxonomy_assembly_and_types = set(
+                [(count_dict['taxonomy'], count_dict['assembly'], count_dict['idtype']) for count_dict in count_groups])
+            release_folder_map = dict(
+                (count_dict['taxonomy'], count_dict['release_folder']) for count_dict in count_groups)
             for taxonomy, assembly, rstype in taxonomy_assembly_and_types:
                 if (taxonomy, assembly) not in species_assembly_annotations:
                     species_assembly_annotations[(taxonomy, assembly)] = {'release_folder': None}
@@ -560,7 +562,6 @@ def main():
     parser.add_argument("--private-config-xml-file", help="ex: /path/to/eva-maven-settings.xml", required=True)
     parser.add_argument("--config-profile", help="profile to use in the config xml", required=False,
                         default='production_processing')
-
 
     args = parser.parse_args()
     logging_config.add_stdout_handler()

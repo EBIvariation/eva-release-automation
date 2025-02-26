@@ -18,13 +18,12 @@ from functools import cached_property
 from itertools import cycle
 
 from ebi_eva_common_pyutils.assembly import NCBIAssembly
-from ebi_eva_internal_pyutils.config_utils import get_mongo_uri_for_eva_profile
 from ebi_eva_common_pyutils.logger import logging_config, AppLogger
+from ebi_eva_common_pyutils.taxonomy.taxonomy import normalise_taxon_scientific_name, get_scientific_name_from_ensembl
+from ebi_eva_internal_pyutils.config_utils import get_mongo_uri_for_eva_profile
 from ebi_eva_internal_pyutils.metadata_utils import get_metadata_connection_handle
 from ebi_eva_internal_pyutils.mongodb import MongoDatabase
 from ebi_eva_internal_pyutils.pg_utils import get_all_results_for_query, execute_query
-from ebi_eva_common_pyutils.taxonomy.taxonomy import normalise_taxon_scientific_name, get_scientific_name_from_ensembl
-
 
 # round-robin through the instances from 1 to 10
 tempmongo_instances = cycle([f'tempmongo-{instance}' for instance in range(1, 11)])
@@ -57,16 +56,16 @@ class ReleaseTracker(AppLogger):
             'assembly_accession text not null, '
             'release_version int8 not null, '
             'sources text not null,'
-            'clustering_status text null, '       # unused
-            'clustering_start timestamp null, '   # unused
-            'clustering_end timestamp null, '     # unused
+            'clustering_status text null, '  # unused
+            'clustering_start timestamp null, '  # unused
+            'clustering_end timestamp null, '  # unused
             'should_be_clustered boolean null, '  # unused
             'fasta_path text null, '
             'report_path text null, '
             'tempmongo_instance text null, '
             'should_be_released boolean null, '
-            'num_rs_to_release int8 null, '       # not computed but still used by release automation
-            'total_num_variants int8 null, '      # not computed and unused
+            'num_rs_to_release int8 null, '  # not computed but still used by release automation
+            'total_num_variants int8 null, '  # not computed and unused
             'release_folder_name text null, '
             'release_status text null, '
             'primary key (taxonomy, assembly_accession, release_version))'
@@ -210,7 +209,8 @@ class ReleaseTracker(AppLogger):
         collection = self.mongo_conn.mongo_handle[self.mongo_conn.db_name][ss_coll]
         ss_with_rs = collection.find_one(ss_query)
         if ss_with_rs:
-            self.info(f'Found SS with RS for Taxonomy {tax} and Assembly {asm} in collection {ss_coll}, SS: {ss_with_rs}')
+            self.info(
+                f'Found SS with RS for Taxonomy {tax} and Assembly {asm} in collection {ss_coll}, SS: {ss_with_rs}')
             return True
         else:
             self.warning(f'No SS with RS found for Taxonomy {tax} and Assembly {asm} in collection {ss_coll}')
@@ -234,7 +234,8 @@ class ReleaseTracker(AppLogger):
         collection = self.mongo_conn.mongo_handle[self.mongo_conn.db_name][rs_opt_coll]
         deprecated_rs_with_tax_asm = collection.find_one(rs_opt_query)
         if deprecated_rs_with_tax_asm:
-            self.info(f'Found Deprecated RS with Taxonomy {tax} and Assembly {asm} in collection {rs_opt_coll}, RS: {deprecated_rs_with_tax_asm}')
+            self.info(
+                f'Found Deprecated RS with Taxonomy {tax} and Assembly {asm} in collection {rs_opt_coll}, RS: {deprecated_rs_with_tax_asm}')
             return True
         else:
             self.warning(f'No Deprecated RS found for Taxonomy {tax} and Assembly {asm} in collection {rs_opt_coll}')

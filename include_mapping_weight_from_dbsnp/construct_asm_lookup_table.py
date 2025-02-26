@@ -16,14 +16,16 @@
 # This script creates a look up table that maps the GCF assembly (or) assembly name in the SNPMapInfo tables
 # to the correct GCA accession
 
-import click
 import logging
-from ebi_eva_common_pyutils.pg_utils import execute_query, get_pg_connection_handle
+
+import click
 from ebi_eva_common_pyutils.assembly_utils \
     import resolve_assembly_name_to_GCA_accession, retrieve_genbank_equivalent_for_GCF_accession
+from ebi_eva_common_pyutils.pg_utils import execute_query, get_pg_connection_handle
+
+from include_mapping_weight_from_dbsnp.dbsnp_mirror_metadata import get_species_info
 from include_mapping_weight_from_dbsnp.snpmapinfo_metadata import get_snpmapinfo_table_names_for_species, \
     get_distinct_asm_with_overweight_snps_in_snpmapinfo_table
-from include_mapping_weight_from_dbsnp.dbsnp_mirror_metadata import get_species_info
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +36,7 @@ def create_asm_lookup_table(metadata_connection_handle, asm_lookup_table_name):
                                       "(database_name text, snpmapinfo_table_name text, " \
                                       "assembly text, assembly_accession text, " \
                                       "constraint unique_constraint unique(database_name, snpmapinfo_table_name, " \
-                                        "assembly))".format(asm_lookup_table_name)
+                                      "assembly))".format(asm_lookup_table_name)
     execute_query(metadata_connection_handle, asm_lookup_table_creation_query)
     metadata_connection_handle.commit()
 
@@ -56,12 +58,12 @@ def construct_asm_lookup_table(metadata_db_name, metadata_db_user, metadata_db_h
         create_asm_lookup_table(metadata_connection_handle, asm_lookup_table_name)
         for species_info in get_species_info(metadata_connection_handle):
             for snpmapinfo_table_name in get_snpmapinfo_table_names_for_species(species_info):
-                distinct_asm, type_of_asm = get_distinct_asm_with_overweight_snps_in_snpmapinfo_table\
+                distinct_asm, type_of_asm = get_distinct_asm_with_overweight_snps_in_snpmapinfo_table \
                     (snpmapinfo_table_name, species_info)
                 for asm in distinct_asm:
                     resolved_GCA_accession = resolve_asm_to_GCA_accession(asm, type_of_asm)
                     query = "insert into {0} values ('{1}', '{2}', '{3}', '{4}') " \
-                            "on conflict on constraint unique_constraint do nothing"\
+                            "on conflict on constraint unique_constraint do nothing" \
                         .format(asm_lookup_table_name
                                 , species_info["database_name"]
                                 , snpmapinfo_table_name

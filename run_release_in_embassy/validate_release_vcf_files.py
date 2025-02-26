@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import click
 import os
 
+import click
+from ebi_eva_common_pyutils.command_utils import run_command_with_output
 from ebi_eva_common_pyutils.logger import logging_config
+from ebi_eva_internal_pyutils.metadata_utils import get_metadata_connection_handle
 
 from run_release_in_embassy.release_common_utils import get_release_vcf_file_name_genbank
 from run_release_in_embassy.release_metadata import get_release_inventory_info_for_assembly, \
     release_vcf_file_categories, vcf_validation_output_file_pattern, asm_report_output_file_pattern
-from ebi_eva_common_pyutils.command_utils import run_command_with_output
-from ebi_eva_internal_pyutils.metadata_utils import get_metadata_connection_handle
 
 
 def remove_index_if_outdated(fasta_path):
@@ -78,7 +78,8 @@ def validate_release_vcf_files(private_config_xml_file, profile, taxonomy_id, as
 @click.option("--vcf-validator-path", help="/path/to/vcf/validator/binary", required=True)
 @click.option("--assembly-checker-path", help="/path/to/assembly/checker/binary", required=True)
 @click.command()
-def main(private_config_xml_file, profile, taxonomy_id, assembly_accession, release_species_inventory_table, release_version,
+def main(private_config_xml_file, profile, taxonomy_id, assembly_accession, release_species_inventory_table,
+         release_version,
          assembly_release_folder, vcf_validator_path, assembly_checker_path):
     logging_config.add_stdout_handler()
     validate_release_vcf_files(private_config_xml_file, profile, taxonomy_id, assembly_accession,

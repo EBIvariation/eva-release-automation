@@ -15,12 +15,14 @@
 # This script adds "mapping weight" attribute to the dbSNP-imported SNPs in Mongo collections - see EVA-2063, EVA-2015
 
 import logging
-import click
-import pymongo.errors
 import sys
 import traceback
+
+import click
+import pymongo.errors
 from ebi_eva_common_pyutils.mongo_utils import get_mongo_connection_handle
 from ebi_eva_common_pyutils.pg_utils import get_pg_connection_handle, get_result_cursor
+
 from include_mapping_weight_from_dbsnp.dbsnp_mirror_metadata import get_species_info, get_db_conn_for_species
 from include_mapping_weight_from_dbsnp.snpmapinfo_metadata import get_snpmapinfo_tables_with_GCA_assembly
 
@@ -54,7 +56,7 @@ def get_all_assemblies_in_accessioning(accessioning_mongo_handle: pymongo.MongoC
 
 
 def get_mapping_weight_query(assembly_from_dbsnp, schema_name):
-    query_to_get_mapping_weight = "select snp_id, weight from dbsnp_{0}.multimap_snps where weight > 1 and "\
+    query_to_get_mapping_weight = "select snp_id, weight from dbsnp_{0}.multimap_snps where weight > 1 and " \
         .format(schema_name)
     query_to_get_mapping_weight += "assembly = '{0}'".format(assembly_from_dbsnp)
     return query_to_get_mapping_weight
@@ -138,8 +140,8 @@ def incorporate_mapping_weight_for_assembly(accessioning_mongo_handle: pymongo.M
 def incorporate_mapping_weight_into_accessioning(metadata_db_name, metadata_db_user, metadata_db_host,
                                                  mongo_user, mongo_password, mongo_host, assembly_accession):
     with get_pg_connection_handle(metadata_db_name, metadata_db_user, metadata_db_host) as metadata_connection_handle, \
-        get_mongo_connection_handle(username=mongo_user,
-                                    password=mongo_password, host=mongo_host) as accessioning_mongo_handle:
+            get_mongo_connection_handle(username=mongo_user,
+                                        password=mongo_password, host=mongo_host) as accessioning_mongo_handle:
         incorporate_mapping_weight_for_assembly(accessioning_mongo_handle, metadata_connection_handle,
                                                 assembly_accession)
 

@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script removes unnecessary suffixes like "_0_0" in SNPMapInfo table names
-import click
 import logging
 
+# This script removes unnecessary suffixes like "_0_0" in SNPMapInfo table names
+import click
 from ebi_eva_common_pyutils.pg_utils import execute_query, get_pg_connection_handle
-from include_mapping_weight_from_dbsnp.snpmapinfo_metadata import get_snpmapinfo_table_names_for_species
+
 from include_mapping_weight_from_dbsnp.dbsnp_mirror_metadata import get_db_conn_for_species, get_species_info
+from include_mapping_weight_from_dbsnp.snpmapinfo_metadata import get_snpmapinfo_table_names_for_species
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ def remove_snpmapinfo_table_name_suffixes(metadata_db_name, metadata_db_user, me
                                              )
                 if len(table_name_components) > 1:
                     with get_db_conn_for_species(species_info) as species_db_connection_handle:
-                        rename_query = "alter table dbsnp_{0}.{1} rename to {2}"\
+                        rename_query = "alter table dbsnp_{0}.{1} rename to {2}" \
                             .format(species_info["database_name"], snpmapinfo_table_name,
                                     "".join(table_name_components[:-1]) + "snpmapinfo")
                         logger.info("Running rename query: " + rename_query)

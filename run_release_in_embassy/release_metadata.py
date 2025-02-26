@@ -29,10 +29,10 @@ def update_release_progress_status(metadata_connection_handle, release_species_i
         date_to_change = 'release_end'
     now = datetime.datetime.now().isoformat()
     update_status_query = (
-        f"update {release_species_inventory_table} " 
-        f"set release_status = '{release_status}', {date_to_change} = '{now}' " 
-        f"where taxonomy = {taxonomy} " 
-        f"and assembly_accession = '{assembly_accession}' " 
+        f"update {release_species_inventory_table} "
+        f"set release_status = '{release_status}', {date_to_change} = '{now}' "
+        f"where taxonomy = {taxonomy} "
+        f"and assembly_accession = '{assembly_accession}' "
         f"and release_version = {release_version};"
     )
     with metadata_connection_handle.cursor() as cursor:

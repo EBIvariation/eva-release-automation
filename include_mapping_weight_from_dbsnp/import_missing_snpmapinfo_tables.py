@@ -16,17 +16,18 @@
 # This script attempts to match a DDL from the "schema bank" (see construct_snpmapinfo_schema_bank.py)
 # against the NCBI SNPMapInfo dumps for each species and if a match is found, attempt to import it
 
-import click
-import logging
 import glob
 import gzip
+import logging
 import os
-import psycopg2
 
+import click
+import psycopg2
 from ebi_eva_common_pyutils.pg_utils import get_pg_connection_handle, get_all_results_for_query
+
+from include_mapping_weight_from_dbsnp.dbsnp_mirror_metadata import get_db_conn_for_species, get_species_info
 from include_mapping_weight_from_dbsnp.snpmapinfo_metadata import get_build_version_from_file_name, \
     get_snpmapinfo_table_names_for_species
-from include_mapping_weight_from_dbsnp.dbsnp_mirror_metadata import get_db_conn_for_species, get_species_info
 
 logger = logging.getLogger(__name__)
 
@@ -40,9 +41,9 @@ def get_unimported_snpmapinfo_files_for_species(species_info, dbsnp_data_source_
     # Verified with the command below:
     # find $DBSNP_DATA_SOURCE_BASE/build* -iname '*snpmapinfo*.gz' 2> /dev/null | cut -d/ -f10 | cut -d_ -f1 | sort | uniq
     glob_pattern = os.path.join(dbsnp_data_source_base, "build_" + species_info["dbsnp_build"],
-                                     species_info["database_name"], "data",
-                                     "b*{0}*.gz".format(
-                                         "".join(["[{0}{1}]".format(char, char.upper()) for char in "snpmapinfo"]))
+                                species_info["database_name"], "data",
+                                "b*{0}*.gz".format(
+                                    "".join(["[{0}{1}]".format(char, char.upper()) for char in "snpmapinfo"]))
                                 )
     # Get all the SNPMapInfo files for all the builds in a given species from the dbSNP SQL dump directory
     snpmapinfo_all_files_for_species = glob.glob(glob_pattern)
@@ -80,8 +81,8 @@ def attempt_matching_ddl_for_snpmapinfo_file(snpmapinfo_file_name, species_info,
     with gzip.open(snpmapinfo_file_name) as snpmapinfo_file_handle:
         number_of_columns_in_file = len(snpmapinfo_file_handle.readline().decode("utf-8").split("\t"))
         query_to_get_matching_ddl = "select distinct snpmapinfo_schema_definition from " \
-                                       "dbsnp_ensembl_species.snpmapinfo_schemas_all_species " \
-                                       "where number_of_columns = {0} order by snpmapinfo_schema_definition"\
+                                    "dbsnp_ensembl_species.snpmapinfo_schemas_all_species " \
+                                    "where number_of_columns = {0} order by snpmapinfo_schema_definition" \
             .format(number_of_columns_in_file)
 
         snpmap_import_successful = False
@@ -101,7 +102,7 @@ def attempt_matching_ddl_for_snpmapinfo_file(snpmapinfo_file_name, species_info,
 def import_unimported_snpmapinfo_tables_for_species(species_info, metadata_connection_handle, dbsnp_data_source_base):
     for file_name in get_unimported_snpmapinfo_files_for_species(species_info, dbsnp_data_source_base):
         logger.info("Attempting import of: " + file_name)
-        attempt_matching_ddl_for_snpmapinfo_file(file_name, species_info,  metadata_connection_handle)
+        attempt_matching_ddl_for_snpmapinfo_file(file_name, species_info, metadata_connection_handle)
 
 
 def import_missing_snpmapinfo_tables(metadata_db_name, metadata_db_user, metadata_db_host, dbsnp_data_source_base):

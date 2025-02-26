@@ -14,14 +14,13 @@
 
 
 import click
-
 from ebi_eva_common_pyutils.command_utils import run_command_with_output
 from ebi_eva_common_pyutils.logger import logging_config
 
-from run_release_in_embassy.release_metadata import release_vcf_file_categories, release_text_file_categories
 from run_release_in_embassy.release_common_utils import get_release_vcf_file_name_genbank, \
     get_unsorted_release_vcf_file_name, get_release_text_file_name, get_unsorted_release_text_file_name, \
     get_bgzip_bcftools_index_commands_for_file
+from run_release_in_embassy.release_metadata import release_vcf_file_categories, release_text_file_categories
 
 
 def sort_bgzip_index_release_files(bgzip_path, bcftools_path, vcf_sort_script_path, taxonomy_id, assembly_accession,
@@ -56,8 +55,9 @@ def sort_bgzip_index_release_files(bgzip_path, bcftools_path, vcf_sort_script_pa
                                                             sorted_release_file_name))
         commands.append("(gzip < {0} > {0}.gz)".format(sorted_release_file_name))
     command = " && ".join(commands)
-    run_command_with_output(f"Sort, bgzip and index release files for taxonomy {taxonomy_id} and assembly {assembly_accession}",
-                            command)
+    run_command_with_output(
+        f"Sort, bgzip and index release files for taxonomy {taxonomy_id} and assembly {assembly_accession}",
+        command)
 
 
 @click.option("--bgzip-path", help="ex: /path/to/bgzip/binary", required=True)

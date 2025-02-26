@@ -13,9 +13,9 @@ from ebi_eva_internal_pyutils.pg_utils import get_all_results_for_query, execute
 from gather_clustering_counts.gather_per_species_clustering_counts import get_taxonomy_and_scientific_name, \
     assembly_table_name, id_to_column
 
-
 logger = logging_config.get_logger(__name__)
 logging_config.add_stdout_handler()
+
 
 def get_counts_from_release_files(private_config_xml_file, release_version, release_dir):
     """
@@ -67,10 +67,10 @@ def get_counts_from_database(private_config_xml_file, release_version):
     all_metrics = ('current_rs', 'multi_mapped_rs', 'merged_rs', 'deprecated_rs', 'merged_deprecated_rs',
                    'new_merged_rs', 'new_deprecated_rs', 'new_merged_deprecated_rs')
     query = (
-        f"SELECT taxonomy_id, assembly_accession, "
-        + ", ".join(all_metrics) +
-        f" FROM {assembly_table_name} "
-        f"WHERE release_version={release_version}"
+            f"SELECT taxonomy_id, assembly_accession, "
+            + ", ".join(all_metrics) +
+            f" FROM {assembly_table_name} "
+            f"WHERE release_version={release_version}"
     )
     with get_metadata_connection_handle('production_processing', private_config_xml_file) as db_conn:
         for row in get_all_results_for_query(db_conn, query):
@@ -115,14 +115,15 @@ def compare_counts(counts_from_files, counts_from_db, threshold, output_csv=None
     return rows
 
 
-def update_counts(private_config_xml_file, counts_from_files, counts_from_db, counts_from_previous_db, release_version, threshold):
+def update_counts(private_config_xml_file, counts_from_files, counts_from_db, counts_from_previous_db, release_version,
+                  threshold):
     """
     Update count that need to be change to be in since between the release files and the database.
     """
     all_metrics = ('current_rs', 'multi_mapped_rs', 'merged_rs', 'deprecated_rs', 'merged_deprecated_rs')
     all_taxids = set(counts_from_files.keys()).union(counts_from_db.keys())
     metrics_per_assembly = {}
-    #summarise previous count per assembly
+    # summarise previous count per assembly
     counts_from_previous_per_assembly = {}
     for taxid in counts_from_previous_db:
         for asm in counts_from_previous_db[taxid]:
@@ -184,7 +185,7 @@ def main():
 
     counts_from_files = get_counts_from_release_files(private_config_xml_file, release_version, release_root_path)
     counts_from_db = get_counts_from_database(private_config_xml_file, release_version)
-    counts_from_previous_db = get_counts_from_database(private_config_xml_file, release_version-1)
+    counts_from_previous_db = get_counts_from_database(private_config_xml_file, release_version - 1)
 
     compare_counts(counts_from_files, counts_from_db, threshold, output_csv)
     if args.update:

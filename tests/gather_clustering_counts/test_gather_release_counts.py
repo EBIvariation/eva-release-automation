@@ -35,7 +35,6 @@ def test_find_links():
 
 
 class TestReleaseCounter(TestCase):
-
     resource_folder = os.path.join(os.path.dirname(__file__), 'resources')
 
     def setUp(self):
@@ -55,7 +54,8 @@ class TestReleaseCounter(TestCase):
         """This test require a postgres database running on localhost. See config_xml_file.xml for detail."""
         log_files_release1 = [os.path.join(self.resource_folder, 'count_for_release1.log')]
         log_files_release2 = [os.path.join(self.resource_folder, 'count_for_release2.log')]
-        list_cow_assemblies = ['GCA_000003055.3', 'GCA_000003055.5', 'GCA_000003205.1', 'GCA_000003205.4', 'GCA_000003205.6', 'Unmapped']
+        list_cow_assemblies = ['GCA_000003055.3', 'GCA_000003055.5', 'GCA_000003205.1', 'GCA_000003205.4',
+                               'GCA_000003205.6', 'Unmapped']
         folder_to_taxonomy = {'bos_taurus': 9913}
 
         with patch.object(ReleaseCounter, 'get_taxonomy') as ptaxonomy:
@@ -125,4 +125,3 @@ class TestReleaseCounter(TestCase):
             rs_assembly_count = result.RSCountPerAssembly
             assert rs_assembly_count.current_rs == 18747108  # 18746871 + 237
             assert rs_assembly_count.release_folder == 'GCA_000188235.2'
-

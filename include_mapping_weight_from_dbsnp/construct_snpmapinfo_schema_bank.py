@@ -25,11 +25,11 @@
 # +---------------+-----------------------+------------------------------+-------------------+
 
 import click
+from ebi_eva_common_pyutils.command_utils import run_command_with_output
+from ebi_eva_common_pyutils.pg_utils import get_pg_connection_handle
 
 from include_mapping_weight_from_dbsnp.dbsnp_mirror_metadata import get_db_conn_for_species, \
     get_all_results_for_query, get_dbsnp_mirror_db_info
-from ebi_eva_common_pyutils.pg_utils import get_pg_connection_handle
-from ebi_eva_common_pyutils.command_utils import run_command_with_output
 
 
 # For a given build (ex: dbsnp_129), add the SNPMapInfo schemas in that build to the schema bank
@@ -38,14 +38,14 @@ def add_snpmapinfo_schemas_in_build_to_schema_bank(dbsnp_mirror_db_info, metadat
         query_to_get_snpmapinfo_tables = "select table_schema, table_name as full_table_name " \
                                          "from information_schema.tables " \
                                          "where lower(table_name) like 'b%snpmapinfo%' " \
-                                            "and lower(table_schema) not like '%donotuse' " \
-                                            "and lower(table_name) not like '%donotuse'"
+                                         "and lower(table_schema) not like '%donotuse' " \
+                                         "and lower(table_name) not like '%donotuse'"
         for result in get_all_results_for_query(dbsnp_build_info_conn, query_to_get_snpmapinfo_tables):
             snpmapinfo_table_schema, snpmapinfo_table_name = result[0], result[1]
             command_to_get_snpmap_table_definition = \
-                ("psql -AF ' ' -t -U dbsnp -h {0} -p {1} -d dbsnp_{2} -v ON_ERROR_STOP=1 -c " + '"\\d {3}.{4}"')\
-                .format(dbsnp_mirror_db_info["pg_host"], dbsnp_mirror_db_info["pg_port"],
-                        dbsnp_mirror_db_info["dbsnp_build"], snpmapinfo_table_schema, snpmapinfo_table_name)
+                ("psql -AF ' ' -t -U dbsnp -h {0} -p {1} -d dbsnp_{2} -v ON_ERROR_STOP=1 -c " + '"\\d {3}.{4}"') \
+                    .format(dbsnp_mirror_db_info["pg_host"], dbsnp_mirror_db_info["pg_port"],
+                            dbsnp_mirror_db_info["dbsnp_build"], snpmapinfo_table_schema, snpmapinfo_table_name)
             snpmapinfo_table_definition = run_command_with_output("Get SNPMapInfo table definition for "
                                                                   + snpmapinfo_table_name,
                                                                   command_to_get_snpmap_table_definition,
@@ -67,13 +67,13 @@ def insert_into_snpmapinfo_schema_bank(snpmapinfo_table_schema, snpmapinfo_table
         insert_statement = "insert into dbsnp_ensembl_species.snpmapinfo_schemas_all_species " \
                            "select * from " \
                            "(select cast('{0}' as text) as added_schema, cast('{1}' as text) as added_table, " \
-                            "cast('{2}' as text), {3}) temp " \
+                           "cast('{2}' as text), {3}) temp " \
                            "where (temp.added_schema, temp.added_table) not in " \
                            "(select dbsnp_database_name, snpmapinfo_table_name " \
-                            "from dbsnp_ensembl_species.snpmapinfo_schemas_all_species)"\
-                            .format(snpmapinfo_table_schema, snpmapinfo_table_name,
-                                    ",".join(snpmapinfo_table_definition_lines),
-                                    len(snpmapinfo_table_definition_lines))
+                           "from dbsnp_ensembl_species.snpmapinfo_schemas_all_species)" \
+            .format(snpmapinfo_table_schema, snpmapinfo_table_name,
+                    ",".join(snpmapinfo_table_definition_lines),
+                    len(snpmapinfo_table_definition_lines))
         metadata_cursor.execute(insert_statement)
         metadata_cursor.connection.commit()
 

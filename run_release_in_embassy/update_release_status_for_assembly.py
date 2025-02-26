@@ -12,14 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import click
 import logging
 
+import click
 from ebi_eva_common_pyutils.logger import logging_config
-
-from run_release_in_embassy.release_metadata import update_release_progress_status
 from ebi_eva_internal_pyutils.metadata_utils import get_metadata_connection_handle
 
+from run_release_in_embassy.release_metadata import update_release_progress_status
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +40,8 @@ def update_release_status_for_assembly(private_config_xml_file, profile, release
 @click.option("--assembly-accession", help="ex: GCA_000003055.6", required=True)
 @click.option("--release-version", help="ex: 2", type=int, required=True)
 @click.command()
-def main(private_config_xml_file, profile, release_species_inventory_table, taxonomy_id, assembly_accession, release_version):
+def main(private_config_xml_file, profile, release_species_inventory_table, taxonomy_id, assembly_accession,
+         release_version):
     logging_config.add_stdout_handler()
     update_release_status_for_assembly(private_config_xml_file, profile, release_species_inventory_table, taxonomy_id,
                                        assembly_accession, release_version)

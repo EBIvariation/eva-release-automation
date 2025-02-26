@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import click
-
 import itertools
 import logging
 import os
@@ -24,15 +22,16 @@ import shutil
 import sys
 import traceback
 
+import click
 from ebi_eva_common_pyutils.command_utils import run_command_with_output
 from ebi_eva_common_pyutils.file_utils import file_diff, FileDiffOption
 from ebi_eva_common_pyutils.logger import logging_config
+from pymongo import MongoClient
 
-from run_release_in_embassy.release_common_utils import open_mongo_port_to_tempmongo, close_mongo_port_to_tempmongo, \
-    get_release_db_name_in_tempmongo_instance
 from run_release_in_embassy.copy_accessioning_collections_to_embassy import collections_assembly_attribute_map, \
     submitted_collections_taxonomy_attribute_map
-from pymongo import MongoClient
+from run_release_in_embassy.release_common_utils import open_mongo_port_to_tempmongo, close_mongo_port_to_tempmongo, \
+    get_release_db_name_in_tempmongo_instance
 
 logger = logging.getLogger(__name__)
 
@@ -44,211 +43,211 @@ cve_collection_name = "clusteredVariantEntity"
 dbsnp_cve_collection_name = "dbsnpClusteredVariantEntity"
 
 get_merged_ss_query = [
-        {
-            "$match": {
-                "eventType": "MERGED",
-                "inactiveObjects.rs": {
-                    "$in": [
+    {
+        "$match": {
+            "eventType": "MERGED",
+            "inactiveObjects.rs": {
+                "$in": [
 
-                    ]
-                }
-            }
-        },
-        {
-            "$project" : {
-                "accession": "$inactiveObjects.rs",
-                "_id" : 0
-            }
-        },
-        {
-            "$group" : {
-                "_id" : "null",
-                "distinct" : {
-                    "$addToSet": "$$ROOT"
-                }
-            }
-        },
-        {
-            "$unwind" : {
-                "path" : "$distinct",
-                "preserveNullAndEmptyArrays" : False
-            }
-        },
-        {
-            "$project" : {
-                 "accession": "$distinct.accession"
+                ]
             }
         }
-    ]
+    },
+    {
+        "$project": {
+            "accession": "$inactiveObjects.rs",
+            "_id": 0
+        }
+    },
+    {
+        "$group": {
+            "_id": "null",
+            "distinct": {
+                "$addToSet": "$$ROOT"
+            }
+        }
+    },
+    {
+        "$unwind": {
+            "path": "$distinct",
+            "preserveNullAndEmptyArrays": False
+        }
+    },
+    {
+        "$project": {
+            "accession": "$distinct.accession"
+        }
+    }
+]
 
 get_declustered_ss_query = [
-        {
-            "$match" : {
-                "eventType" : "UPDATED",
-                "reason" : {"$regex": r'^Declustered.*'},
-                "inactiveObjects.rs" : {
-                    "$in" : [
+    {
+        "$match": {
+            "eventType": "UPDATED",
+            "reason": {"$regex": r'^Declustered.*'},
+            "inactiveObjects.rs": {
+                "$in": [
 
-                    ]
-                }
-            }
-        },
-        {
-            "$project" : {
-                "accession" : "$inactiveObjects.rs",
-                "_id" : 0
-            }
-        },
-        {
-            "$group" : {
-                "_id" : "null",
-                "distinct" : {
-                    "$addToSet" : "$$ROOT"
-                }
-            }
-        },
-        {
-            "$unwind" : {
-                "path" : "$distinct",
-                "preserveNullAndEmptyArrays" : False
-            }
-        },
-        {
-            "$project" : {
-                 "accession": "$distinct.accession"
+                ]
             }
         }
-    ]
+    },
+    {
+        "$project": {
+            "accession": "$inactiveObjects.rs",
+            "_id": 0
+        }
+    },
+    {
+        "$group": {
+            "_id": "null",
+            "distinct": {
+                "$addToSet": "$$ROOT"
+            }
+        }
+    },
+    {
+        "$unwind": {
+            "path": "$distinct",
+            "preserveNullAndEmptyArrays": False
+        }
+    },
+    {
+        "$project": {
+            "accession": "$distinct.accession"
+        }
+    }
+]
 
 get_tandem_repeat_rs_query = [
-        {
-            "$match" : {
-                "type" : "TANDEM_REPEAT",
-                "accession" : {
-                    "$in" : [
+    {
+        "$match": {
+            "type": "TANDEM_REPEAT",
+            "accession": {
+                "$in": [
 
-                    ]
-                }
-            }
-        },
-        {
-            "$project" : {
-                "accession" : "$accession",
-                "_id" : 0
-            }
-        },
-        {
-            "$group" : {
-                "_id" : "null",
-                "distinct" : {
-                    "$addToSet" : "$$ROOT"
-                }
-            }
-        },
-        {
-            "$unwind" : {
-                "path" : "$distinct",
-                "preserveNullAndEmptyArrays" : False
-            }
-        },
-        {
-            "$project" : {
-                 "accession": "$distinct.accession"
+                ]
             }
         }
-    ]
+    },
+    {
+        "$project": {
+            "accession": "$accession",
+            "_id": 0
+        }
+    },
+    {
+        "$group": {
+            "_id": "null",
+            "distinct": {
+                "$addToSet": "$$ROOT"
+            }
+        }
+    },
+    {
+        "$unwind": {
+            "path": "$distinct",
+            "preserveNullAndEmptyArrays": False
+        }
+    },
+    {
+        "$project": {
+            "accession": "$distinct.accession"
+        }
+    }
+]
 
 get_rs_with_non_nucleotide_letters_query_SVE = [
-        {
-            "$match" : {
-                "rs" : {
-                    "$in" : [
+    {
+        "$match": {
+            "rs": {
+                "$in": [
 
-                    ]
-                },
-                "$or" : [
-                    {
-                        "ref" : {"$not" : re.compile("^[acgtnACGTN]+$") }
-
-                    },
-                    {
-                        "alt" : {"$not" : re.compile("^[acgtnACGTN]+$") }
-                    }
                 ]
-            }
-        },
-        {
-            "$project" : {
-                "accession" : "$rs",
-                "_id" : 0
-            }
-        },
-        {
-            "$group" : {
-                "_id" : "null",
-                "distinct" : {
-                    "$addToSet" : "$$ROOT"
+            },
+            "$or": [
+                {
+                    "ref": {"$not": re.compile("^[acgtnACGTN]+$")}
+
+                },
+                {
+                    "alt": {"$not": re.compile("^[acgtnACGTN]+$")}
                 }
-            }
-        },
-        {
-            "$unwind" : {
-                "path" : "$distinct",
-                "preserveNullAndEmptyArrays" : False
-            }
-        },
-        {
-            "$project" : {
-                 "accession": "$distinct.accession"
+            ]
+        }
+    },
+    {
+        "$project": {
+            "accession": "$rs",
+            "_id": 0
+        }
+    },
+    {
+        "$group": {
+            "_id": "null",
+            "distinct": {
+                "$addToSet": "$$ROOT"
             }
         }
-    ]
+    },
+    {
+        "$unwind": {
+            "path": "$distinct",
+            "preserveNullAndEmptyArrays": False
+        }
+    },
+    {
+        "$project": {
+            "accession": "$distinct.accession"
+        }
+    }
+]
 
 get_rs_with_non_nucleotide_letters_query_SVOE = [
-        {
-            "$match" : {
-                "inactiveObjects.rs" : {
-                    "$in" : [
+    {
+        "$match": {
+            "inactiveObjects.rs": {
+                "$in": [
 
-                    ]
-                },
-                "$or" : [
-                    {
-                        "inactiveObjects.ref" : {"$not" : re.compile("^[acgtnACGTN]+$") }
-
-                    },
-                    {
-                        "inactiveObjects.alt" : {"$not" : re.compile("^[acgtnACGTN]+$") }
-                    }
                 ]
-            }
-        },
-        {
-            "$project" : {
-                "accession" : "$inactiveObjects.rs",
-                "_id" : 0
-            }
-        },
-        {
-            "$group" : {
-                "_id" : "null",
-                "distinct" : {
-                    "$addToSet" : "$$ROOT"
+            },
+            "$or": [
+                {
+                    "inactiveObjects.ref": {"$not": re.compile("^[acgtnACGTN]+$")}
+
+                },
+                {
+                    "inactiveObjects.alt": {"$not": re.compile("^[acgtnACGTN]+$")}
                 }
-            }
-        },
-        {
-            "$unwind" : {
-                "path" : "$distinct",
-                "preserveNullAndEmptyArrays" : False
-            }
-        },
-        {
-            "$project" : {
-                 "accession": "$distinct.accession"
+            ]
+        }
+    },
+    {
+        "$project": {
+            "accession": "$inactiveObjects.rs",
+            "_id": 0
+        }
+    },
+    {
+        "$group": {
+            "_id": "null",
+            "distinct": {
+                "$addToSet": "$$ROOT"
             }
         }
-    ]
+    },
+    {
+        "$unwind": {
+            "path": "$distinct",
+            "preserveNullAndEmptyArrays": False
+        }
+    },
+    {
+        "$project": {
+            "accession": "$distinct.accession"
+        }
+    }
+]
 
 
 def read_next_batch_of_missing_ids(missing_rs_ids_file_handle):
@@ -289,7 +288,8 @@ def get_unique_release_rs_ids(assembly_release_folder, taxonomy_id, assembly_acc
     return unique_ids_file
 
 
-def get_ids_from_mongo_for_category(missing_rs_ids_file, assembly_accession, mongo_database_handle, aggregate_query_to_use,
+def get_ids_from_mongo_for_category(missing_rs_ids_file, assembly_accession, mongo_database_handle,
+                                    aggregate_query_to_use,
                                     rs_id_attribute_path, collections_to_query, attribution_category):
     collection_handles = [mongo_database_handle[collection] for collection in collections_to_query]
     output_file = os.path.join(os.path.dirname(missing_rs_ids_file),
@@ -339,7 +339,8 @@ def get_rs_with_tandem_repeat_type(missing_rs_ids_file, assembly_accession, mong
 
 
 def get_rs_with_non_nucleotide_letters(missing_rs_ids_file, assembly_accession, mongo_database_handle):
-    results_from_sve_file = get_ids_from_mongo_for_category(missing_rs_ids_file, assembly_accession, mongo_database_handle,
+    results_from_sve_file = get_ids_from_mongo_for_category(missing_rs_ids_file, assembly_accession,
+                                                            mongo_database_handle,
                                                             aggregate_query_to_use=
                                                             get_rs_with_non_nucleotide_letters_query_SVE,
                                                             rs_id_attribute_path="rs",
@@ -390,7 +391,7 @@ def get_missing_ids_attributions(assembly_accession, missing_rs_ids_file, mongo_
     # Residual RS IDs = (Residual RS IDs so far) - (RS with merged SS)
     rs_still_missing_file = get_residual_missing_rs_ids_file(rs_still_missing_file, rs_with_merged_ss_file)
     rs_with_declustered_ss_file = get_rs_with_declustered_ss(rs_still_missing_file, assembly_accession,
-                                                        mongo_database_handle)
+                                                             mongo_database_handle)
     logger.info("Wrote missing RS IDs attributed to declustered SS to {0}....".format(rs_with_declustered_ss_file))
 
     # Residual RS IDs = (Residual RS IDs so far) - (RS with declustered SS)
@@ -459,12 +460,15 @@ def export_unique_rs_ids_from_mongo(mongo_database_handle, taxonomy_id, assembly
                                                                mongo_unique_rs_ids_file))
 
 
-def validate_rs_release_files(private_config_xml_file, profile, taxonomy_id, assembly_accession, release_species_inventory_table,
+def validate_rs_release_files(private_config_xml_file, profile, taxonomy_id, assembly_accession,
+                              release_species_inventory_table,
                               release_version, assembly_release_folder):
     port_forwarding_process_id, mongo_port, exit_code = None, None, -1
     try:
-        port_forwarding_process_id, mongo_port = open_mongo_port_to_tempmongo(private_config_xml_file, profile, taxonomy_id,
-                                                                              assembly_accession, release_species_inventory_table,
+        port_forwarding_process_id, mongo_port = open_mongo_port_to_tempmongo(private_config_xml_file, profile,
+                                                                              taxonomy_id,
+                                                                              assembly_accession,
+                                                                              release_species_inventory_table,
                                                                               release_version)
         db_name_in_tempmongo_instance = get_release_db_name_in_tempmongo_instance(taxonomy_id, assembly_accession)
         with MongoClient(port=mongo_port) as client:

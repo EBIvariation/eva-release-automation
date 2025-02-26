@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import click
 import logging
 import shutil
 import sys
 import traceback
 
+import click
 from ebi_eva_common_pyutils.command_utils import run_command_with_output
 from ebi_eva_common_pyutils.logger import logging_config
 from ebi_eva_internal_pyutils.config_utils import get_mongo_uri_for_eva_profile
@@ -25,10 +25,10 @@ from ebi_eva_internal_pyutils.metadata_utils import get_metadata_connection_hand
 from ebi_eva_internal_pyutils.mongo_utils import copy_db
 from pymongo import MongoClient
 from pymongo.uri_parser import parse_uri
+
 from run_release_in_embassy.release_common_utils import open_mongo_port_to_tempmongo, close_mongo_port_to_tempmongo, \
     get_release_db_name_in_tempmongo_instance
 from run_release_in_embassy.release_metadata import get_release_inventory_info_for_assembly
-
 
 logger = logging.getLogger(__name__)
 collections_assembly_attribute_map = {
@@ -48,6 +48,7 @@ submitted_collections_taxonomy_attribute_map = {
     "submittedVariantEntity": "tax",
     "submittedVariantOperationEntity": "inactiveObjects.tax"
 }
+
 
 def remote_db_is_empty(local_forwarded_port, assembly_accession, destination_db_name):
     logger.info(f"check if: {assembly_accession} has been copied")
@@ -111,8 +112,10 @@ def copy_accessioning_collections_to_embassy(private_config_xml_file, profile, t
                                              dump_dir):
     port_forwarding_process_id, mongo_port, exit_code = None, None, -1
     try:
-        port_forwarding_process_id, mongo_port = open_mongo_port_to_tempmongo(private_config_xml_file, profile, taxonomy_id,
-                                                                              assembly_accession, release_species_inventory_table,
+        port_forwarding_process_id, mongo_port = open_mongo_port_to_tempmongo(private_config_xml_file, profile,
+                                                                              taxonomy_id,
+                                                                              assembly_accession,
+                                                                              release_species_inventory_table,
                                                                               release_version)
         with get_metadata_connection_handle(profile, private_config_xml_file) as metadata_connection_handle:
             # To be idempotent, clear destination tempmongo database
@@ -152,7 +155,8 @@ def copy_accessioning_collections_to_embassy(private_config_xml_file, profile, t
 @click.option("--release-version", help="ex: 2", type=int, required=True)
 @click.option("--dump-dir", help="ex: /path/to/dump", required=True)
 @click.command()
-def main(private_config_xml_file, profile, taxonomy_id, assembly_accession, collections_to_copy, release_species_inventory_table,
+def main(private_config_xml_file, profile, taxonomy_id, assembly_accession, collections_to_copy,
+         release_species_inventory_table,
          release_version, dump_dir):
     logging_config.add_stdout_handler()
     copy_accessioning_collections_to_embassy(private_config_xml_file, profile, taxonomy_id, assembly_accession,

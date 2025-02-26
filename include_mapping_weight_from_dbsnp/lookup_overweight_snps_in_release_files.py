@@ -14,17 +14,17 @@
 
 # This script looks up the impact of overweight SNPs
 
-import click
 import logging
 import os
 
-from ebi_eva_common_pyutils.pg_utils import get_pg_connection_handle, get_result_cursor
+import click
 from ebi_eva_common_pyutils.command_utils import run_command_with_output
+from ebi_eva_common_pyutils.pg_utils import get_pg_connection_handle, get_result_cursor
+
+from include_mapping_weight_from_dbsnp.dbsnp_mirror_metadata import get_db_conn_for_species, get_species_info
 from include_mapping_weight_from_dbsnp.snpmapinfo_metadata import get_build_version_from_file_name, \
     get_snpmapinfo_table_names_for_species, get_distinct_asm_with_overweight_snps_in_snpmapinfo_table, \
     lookup_GCA_assembly
-from include_mapping_weight_from_dbsnp.dbsnp_mirror_metadata import get_db_conn_for_species, get_species_info
-
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ def export_snpmapinfo_for_species(species_info, metadata_connection_handle, mapp
                 if type_of_asm == "assembly_name":
                     specific_query = weight_criteria_query + " and assembly = '{0}'".format(asm)
                 else:
-                    specific_query = weight_criteria_query + " and asm_acc = '{0}' and asm_version = '{1}'"\
+                    specific_query = weight_criteria_query + " and asm_acc = '{0}' and asm_version = '{1}'" \
                         .format(asm.split(".")[0], asm.split(".")[1])
                 specific_query = specific_query.format(species_name, snpmapinfo_table_name) + " order by 1"
                 try:
@@ -56,13 +56,13 @@ def export_snpmapinfo_for_species(species_info, metadata_connection_handle, mapp
                     logger.error(e)
                     continue
                 output_file_name = os.path.join(export_dir,
-                                                    "{0}_{1}_{2}_overweight_snps.csv".format(species_name,
-                                                                                             snpmapinfo_table_name,
-                                                                                             associated_GCA_assembly)
-                                                    )
+                                                "{0}_{1}_{2}_overweight_snps.csv".format(species_name,
+                                                                                         snpmapinfo_table_name,
+                                                                                         associated_GCA_assembly)
+                                                )
                 with open(output_file_name, 'w') \
                         as output_file_handle:
-                    get_result_cursor(species_db_connection_handle, specific_query)\
+                    get_result_cursor(species_db_connection_handle, specific_query) \
                         .copy_expert(copy_statement.format(specific_query), output_file_handle)
                     exported_filenames_and_assemblies.append((output_file_name
                                                               , get_build_version_from_file_name(snpmapinfo_table_name)
@@ -81,7 +81,7 @@ def create_lookup_result_file(species_name, rs_release_base_folder, export_dir, 
             lookup_result_file = os.path.join(export_dir,
                                               os.path.splitext(
                                                   os.path.basename(exported_file_with_overweight_snps))[0] +
-                                                        "_in_{0}.txt".format(release_file_suffix)
+                                              "_in_{0}.txt".format(release_file_suffix)
                                               )
 
             release_file_to_lookup_against = os.path.join(
@@ -93,13 +93,13 @@ def create_lookup_result_file(species_name, rs_release_base_folder, export_dir, 
                                                                 '"comm -12 ' \
                                                                 '<(zcat \\"{0}\\" | grep -v ^# | cut -f3 | sort | uniq) ' \
                                                                 '\\"{1}\\" ' \
-                                                                '1> \\"{2}\\""'\
+                                                                '1> \\"{2}\\""' \
                 .format(release_file_to_lookup_against, exported_file_with_overweight_snps, lookup_result_file)
             if release_file_suffix in ["current_ids", "merged_ids"]:
                 run_command_with_output(
                     "Overweight SNP impact in {0} {1} for the {2} build {3} assembly"
-                        .format(species_name, release_file_suffix, dbsnp_build,
-                                associated_GCA_assembly)
+                    .format(species_name, release_file_suffix, dbsnp_build,
+                            associated_GCA_assembly)
                     , command_to_lookup_overweight_snps_in_release_file
                     , return_process_output=True)
                 if release_file_suffix == "merged_ids":
@@ -111,16 +111,16 @@ def create_lookup_result_file(species_name, rs_release_base_folder, export_dir, 
                     # Merged ID release files have the merge target RS IDs in the INFO column with CURR= prefix
                     # Check if overweight SNPs appear in this column
                     command_to_lookup_overweight_snps_in_merge_target = 'bash -c ' \
-                                     '"comm -12 ' \
-                                     '<(zcat \\"{0}\\" | grep -v ^# | grep -o -E "CURR=rs[0-9]+" | cut -d= -f2 | sort | uniq) ' \
-                                     '\\"{1}\\" ' \
-                                     '1> \\"{2}\\""'\
+                                                                        '"comm -12 ' \
+                                                                        '<(zcat \\"{0}\\" | grep -v ^# | grep -o -E "CURR=rs[0-9]+" | cut -d= -f2 | sort | uniq) ' \
+                                                                        '\\"{1}\\" ' \
+                                                                        '1> \\"{2}\\""' \
                         .format(release_file_to_lookup_against, exported_file_with_overweight_snps,
                                 lookup_result_file_for_merge_id_targets)
                     run_command_with_output(
                         "Overweight SNP impact in {0} {1} for the {2} build {3} assembly"
-                            .format(species_name, release_file_suffix, dbsnp_build,
-                                    associated_GCA_assembly)
+                        .format(species_name, release_file_suffix, dbsnp_build,
+                                associated_GCA_assembly)
                         , command_to_lookup_overweight_snps_in_merge_target
                         , return_process_output=True)
             elif release_file_suffix in ["deprecated_ids", "merged_deprecated_ids"]:
@@ -138,8 +138,8 @@ def create_lookup_result_file(species_name, rs_release_base_folder, export_dir, 
                                            lookup_result_file)
                 run_command_with_output(
                     "Overweight SNP impact in {0} {1} for the {2} build {3} assembly"
-                        .format(species_name, release_file_suffix, dbsnp_build,
-                                associated_GCA_assembly)
+                    .format(species_name, release_file_suffix, dbsnp_build,
+                            associated_GCA_assembly)
                     , command_to_lookup_overweight_snps_in_release_file
                     , return_process_output=True)
 

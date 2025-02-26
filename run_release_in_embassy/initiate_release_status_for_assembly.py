@@ -12,14 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import click
 import logging
 
+import click
 from ebi_eva_common_pyutils.logger import logging_config
-
-from run_release_in_embassy.release_metadata import update_release_progress_status
 from ebi_eva_internal_pyutils.metadata_utils import get_metadata_connection_handle
 
+from run_release_in_embassy.release_metadata import update_release_progress_status
 
 logger = logging.getLogger(__name__)
 

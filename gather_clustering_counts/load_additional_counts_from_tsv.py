@@ -1,16 +1,14 @@
 import argparse
 import csv
 
-from ebi_eva_internal_pyutils.metadata_utils import get_metadata_connection_handle
 from ebi_eva_common_pyutils.logger import logging_config
+from ebi_eva_internal_pyutils.metadata_utils import get_metadata_connection_handle
 from ebi_eva_internal_pyutils.pg_utils import execute_query
 
 from gather_clustering_counts.gather_per_species_clustering_counts import assembly_table_name
 
-
 logger = logging_config.get_logger(__name__)
 logging_config.add_stdout_handler()
-
 
 metrics_map = {
     'MERGED': ('new_merged_rs', 'merged_rs'),
@@ -31,7 +29,7 @@ def load_from_tsv(tsv_file, release_version, private_config_xml_file):
                     f"UPDATE {assembly_table_name} SET "
                     f"{new_metric} = {new_metric} + {count}, "
                     f"{metric} = {metric} + {count}, "
-                    f"current_rs = current_rs - {count} " 
+                    f"current_rs = current_rs - {count} "
                     f"WHERE assembly_accession='{record.get('assembly')}' and release_version={release_version};"
                 )
             else:
@@ -56,7 +54,8 @@ def main():
     parser.add_argument("--tsv_file", type=str,
                         help="path to the tab separated file containing 3 columns with assembly, metric and count header.",
                         required=True)
-    parser.add_argument('--private-config-xml-file', help='Path to the file containing the maven configuration', required=True)
+    parser.add_argument('--private-config-xml-file', help='Path to the file containing the maven configuration',
+                        required=True)
     parser.add_argument("--release-version", type=int, help="current release version", required=True)
 
     args = parser.parse_args()

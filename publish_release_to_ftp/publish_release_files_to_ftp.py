@@ -20,17 +20,16 @@ import glob
 import os
 from argparse import ArgumentParser
 
-from ebi_eva_common_pyutils.config import cfg
-
-from publish_release_to_ftp.create_assembly_name_symlinks import create_assembly_name_symlinks
 from ebi_eva_common_pyutils.command_utils import run_command_with_output
+from ebi_eva_common_pyutils.config import cfg
 from ebi_eva_common_pyutils.logger import logging_config
 from ebi_eva_internal_pyutils.metadata_utils import get_metadata_connection_handle
 from ebi_eva_internal_pyutils.pg_utils import get_all_results_for_query
 
+from publish_release_to_ftp.create_assembly_name_symlinks import create_assembly_name_symlinks
 from run_release_in_embassy.release_common_utils import get_release_folder_name
-from run_release_in_embassy.run_release_for_species import load_config, get_release_folder
 from run_release_in_embassy.release_metadata import release_vcf_file_categories, release_text_file_categories
+from run_release_in_embassy.run_release_for_species import load_config, get_release_folder
 
 by_assembly_folder_name = "by_assembly"
 by_species_folder_name = "by_species"
@@ -136,7 +135,7 @@ def create_symlink_to_species_folder_from_assembly_folder(current_release_assemb
                                 'bash -c "cd {0} && ln -sfT {1} {2}"'.format(
                                     public_release_assembly_folder,
                                     os.path.relpath(public_release_species_assembly_folder,
-                                    public_release_assembly_folder),
+                                                    public_release_assembly_folder),
                                     public_release_assembly_species_folder))
     else:
         raise Exception(f"The species folder {public_release_assembly_species_folder} we're linking to does not exist")
@@ -171,6 +170,7 @@ def copy_current_assembly_data_to_ftp(current_release_assembly_info, release_pro
             open(md5sum_output_file, "a").write(md5sum_output.strip() + "\t" +
                                                 os.path.basename(source_file_path) + "\n")
 
+
 def create_public_release_assembly_folder_if_not_exists(assembly_accession, public_release_assembly_folder):
     if not os.path.exists(public_release_assembly_folder):
         run_command_with_output(f"Creating release folder for {assembly_accession}...",
@@ -195,7 +195,8 @@ def publish_assembly_release_files_to_ftp(current_release_assembly_info, release
             f"""Symlinking to release level {readme_general_info_file} and {readme_known_issues_file} files for 
             assembly {assembly_accession}""",
             'bash -c "cd {1} && ln -sfT {0}/{2} {1}/{2} && ln -sfT {0}/{3} {1}/{3}"'.format(
-                os.path.relpath(release_properties.public_ftp_current_release_folder, public_release_species_assembly_folder),
+                os.path.relpath(release_properties.public_ftp_current_release_folder,
+                                public_release_species_assembly_folder),
                 public_release_species_assembly_folder,
                 readme_general_info_file,
                 readme_known_issues_file

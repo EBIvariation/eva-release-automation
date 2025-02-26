@@ -12,18 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import click
 import collections
 import glob
 import os
 
+import click
 from ebi_eva_common_pyutils.command_utils import run_command_with_output
 from ebi_eva_common_pyutils.logger import logging_config
 from ebi_eva_internal_pyutils.metadata_utils import get_metadata_connection_handle
-from run_release_in_embassy.release_metadata import release_vcf_file_categories, release_text_file_categories, \
-    get_release_inventory_info_for_assembly
+
 from run_release_in_embassy.release_common_utils import get_bgzip_bcftools_index_commands_for_file, \
     get_release_vcf_file_name, get_unsorted_release_vcf_file_name, get_unsorted_release_text_file_name
+from run_release_in_embassy.release_metadata import release_vcf_file_categories, release_text_file_categories, \
+    get_release_inventory_info_for_assembly
 
 
 def move_release_files_to_unsorted_category(taxonomy_id, assembly_accession, assembly_release_folder, vcf_file_category,
@@ -91,7 +92,8 @@ def merge_dbsnp_eva_vcf_files(bgzip_path, bcftools_path, vcf_sort_script_path, t
     vcf_merge_commands = []
     # This is the desired post-merge output file name in the format <assembly>_<category>.vcf
     # ex: 60711_GCA_000409795.2_merged_ids.vcf
-    unsorted_release_file_path = get_unsorted_release_vcf_file_name(assembly_release_folder, taxonomy_id, assembly_accession,
+    unsorted_release_file_path = get_unsorted_release_vcf_file_name(assembly_release_folder, taxonomy_id,
+                                                                    assembly_accession,
                                                                     vcf_file_category)
     unsorted_release_file_name = os.path.basename(unsorted_release_file_path)
     # After release pipeline is run on a species, the default VCF output files are in the formats like below
@@ -100,9 +102,11 @@ def merge_dbsnp_eva_vcf_files(bgzip_path, bcftools_path, vcf_sort_script_path, t
     move_release_files_to_unsorted_category(taxonomy_id, assembly_accession, assembly_release_folder, vcf_file_category,
                                             unsorted_release_file_path)
     dbsnp_vcf_file_pattern = unsorted_release_file_path.replace(unsorted_release_file_name,
-                                                                "dbsnp*_" + unsorted_release_file_name.replace(f'{str(taxonomy_id)}_', ''))
+                                                                "dbsnp*_" + unsorted_release_file_name.replace(
+                                                                    f'{str(taxonomy_id)}_', ''))
     eva_vcf_file_pattern = unsorted_release_file_path.replace(unsorted_release_file_name,
-                                                              "eva*_" + unsorted_release_file_name.replace(f'{str(taxonomy_id)}_', ''))
+                                                              "eva*_" + unsorted_release_file_name.replace(
+                                                                  f'{str(taxonomy_id)}_', ''))
     files_in_dbsnp_for_category = glob.glob(dbsnp_vcf_file_pattern)
     files_in_eva_for_category = glob.glob(eva_vcf_file_pattern)
 
@@ -122,9 +126,9 @@ def merge_dbsnp_eva_vcf_files(bgzip_path, bcftools_path, vcf_sort_script_path, t
         sorted_file_names = [name.replace("_unsorted", "") for name in [dbsnp_file, eva_file]]
         vcf_merge_commands.append(
             "(({0} merge --no-version -m none -O v {1}.gz {2}.gz | grep -v ^##) >> {3})".format(bcftools_path,
-                                                                                        sorted_file_names[0],
-                                                                                        sorted_file_names[1],
-                                                                                        unsorted_release_file_path))
+                                                                                                sorted_file_names[0],
+                                                                                                sorted_file_names[1],
+                                                                                                unsorted_release_file_path))
     # If there is only one source (EVA or dbSNP), just straight up copy the file to the destination
     elif "dbsnp" in data_sources.lower():
         vcf_merge_commands.append("(cp {0} {1})".format(dbsnp_file, unsorted_release_file_path))
@@ -137,17 +141,20 @@ def merge_dbsnp_eva_vcf_files(bgzip_path, bcftools_path, vcf_sort_script_path, t
 def merge_dbsnp_eva_text_files(taxonomy_id, assembly_accession, assembly_release_folder, text_release_file_category,
                                data_sources):
     text_release_file_merge_commands = []
-    unsorted_release_file_path = get_unsorted_release_text_file_name(assembly_release_folder, taxonomy_id, assembly_accession,
+    unsorted_release_file_path = get_unsorted_release_text_file_name(assembly_release_folder, taxonomy_id,
+                                                                     assembly_accession,
                                                                      text_release_file_category)
     unsorted_release_file_name = os.path.basename(unsorted_release_file_path)
     # After release is run on a species, the default text (i.e., non-vcf) output files have ".unsorted.txt" file suffix
     # ex: dbsnp_GCA_000409795.2_merged_deprecated_ids.unsorted.txt
     dbsnp_text_file_pattern = unsorted_release_file_path.replace(unsorted_release_file_name, "dbsnp*_" +
-                                                                 unsorted_release_file_name.replace(f'{str(taxonomy_id)}_', ''))
+                                                                 unsorted_release_file_name.replace(
+                                                                     f'{str(taxonomy_id)}_', ''))
     # After release is run on a species, the default text (i.e., non-vcf) output files have ".unsorted.txt" file suffix
     # ex: eva_GCA_000409795.2_merged_deprecated_ids.unsorted.txt
     eva_text_file_pattern = unsorted_release_file_path.replace(unsorted_release_file_name, "eva*_" +
-                                                               unsorted_release_file_name.replace(f'{str(taxonomy_id)}_', ''))
+                                                               unsorted_release_file_name.replace(
+                                                                   f'{str(taxonomy_id)}_', ''))
     files_in_dbsnp_for_category = glob.glob(dbsnp_text_file_pattern)
     files_in_eva_for_category = glob.glob(eva_text_file_pattern)
 
@@ -188,8 +195,9 @@ def merge_dbsnp_eva_release_files(private_config_xml_file, profile, bgzip_path, 
             merge_commands.extend(merge_dbsnp_eva_text_files(taxonomy_id, assembly_accession, assembly_release_folder,
                                                              text_release_file_category, release_info["sources"]))
         final_merge_command = " && ".join(merge_commands)
-        run_command_with_output(f"Merging dbSNP and EVA release files for taxonomy {taxonomy_id} and assembly {assembly_accession}",
-                                final_merge_command)
+        run_command_with_output(
+            f"Merging dbSNP and EVA release files for taxonomy {taxonomy_id} and assembly {assembly_accession}",
+            final_merge_command)
 
 
 @click.option("--private-config-xml-file", help="ex: /path/to/eva-maven-settings.xml", required=True)

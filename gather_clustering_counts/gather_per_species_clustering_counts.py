@@ -1,9 +1,9 @@
 import argparse
 import os
 
+from ebi_eva_common_pyutils.command_utils import run_command_with_output
 from ebi_eva_common_pyutils.logger import logging_config
 from ebi_eva_internal_pyutils.metadata_utils import get_metadata_connection_handle
-from ebi_eva_common_pyutils.command_utils import run_command_with_output
 from ebi_eva_internal_pyutils.pg_utils import get_all_results_for_query, execute_query
 
 logger = logging_config.get_logger(__name__)
@@ -51,7 +51,7 @@ def get_new_ss_clustered(private_config_xml_file, release_version, taxonomy_id):
 
 def get_last_release_metric(private_config_xml_file, release_version, taxonomy_id, column_name):
     query = f"select {column_name} from {species_table_name} " \
-            f"where release_version={release_version-1} " \
+            f"where release_version={release_version - 1} " \
             f"and taxonomy_id={taxonomy_id}"
     with get_metadata_connection_handle('production_processing', private_config_xml_file) as db_conn:
         results = get_all_results_for_query(db_conn, query)
@@ -126,7 +126,7 @@ def gather_counts(private_config_xml_file, release_version, release_dir, species
             # Include diff with previous release
             last_release_total = get_last_release_metric(private_config_xml_file, release_version, taxid,
                                                          id_to_column[metric_id])
-            per_species_results[f'new_{id_to_column[metric_id]}'] = max(0, total-last_release_total)
+            per_species_results[f'new_{id_to_column[metric_id]}'] = max(0, total - last_release_total)
 
         results.append(per_species_results)
     return results

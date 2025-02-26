@@ -14,9 +14,10 @@
 
 import logging
 import os
-from include_mapping_weight_from_dbsnp.dbsnp_mirror_metadata import get_db_conn_for_species
+
 from ebi_eva_common_pyutils.pg_utils import get_all_results_for_query
 
+from include_mapping_weight_from_dbsnp.dbsnp_mirror_metadata import get_db_conn_for_species
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ def get_snpmapinfo_tables_with_GCA_assembly(metadata_connection_handle, GCA_asse
 def lookup_GCA_assembly(species_name, snpmapinfo_table_name, asm, metadata_connection_handle):
     query = "select assembly_accession from dbsnp_ensembl_species.EVA2015_snpmapinfo_asm_lookup " \
             "where database_name = '{0}' and snpmapinfo_table_name = '{1}' and assembly = '{2}' " \
-            "and assembly_accession <> 'unresolved' and assembly_accession is not null"\
+            "and assembly_accession <> 'unresolved' and assembly_accession is not null" \
         .format(species_name, snpmapinfo_table_name, asm)
     results = get_all_results_for_query(metadata_connection_handle, query)
     if len(results) == 0:

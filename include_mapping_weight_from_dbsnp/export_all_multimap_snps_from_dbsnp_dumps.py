@@ -15,16 +15,15 @@
 # The purpose of this script is to validate the mapping weight attribute addition that was performed by
 # the script incorporate_mapping_weight_into_accessioning.py
 
-import click
 import logging
-import psycopg2
-
 from collections import defaultdict
+
+import click
+import psycopg2
 from ebi_eva_common_pyutils.command_utils import run_command_with_output
 from ebi_eva_common_pyutils.config_utils import get_pg_metadata_uri_for_eva_profile
 from ebi_eva_common_pyutils.metadata_utils import get_species_info, get_db_conn_for_species
 from ebi_eva_common_pyutils.pg_utils import get_all_results_for_query, get_result_cursor
-
 
 logger = logging.getLogger(__name__)
 
@@ -42,8 +41,9 @@ def get_assemblies_with_multimap_snps_for_species(metadata_connection_handle):
 
 def export_all_multimap_snps_from_dbsnp_dumps(private_config_xml_file):
     result_file = "all_multimap_snp_ids_from_dbsnp_dumps.txt"
-    with psycopg2.connect(get_pg_metadata_uri_for_eva_profile("production_processing", private_config_xml_file), user="evapro") \
-        as metadata_connection_handle:
+    with psycopg2.connect(get_pg_metadata_uri_for_eva_profile("production_processing", private_config_xml_file),
+                          user="evapro") \
+            as metadata_connection_handle:
         assembly_GCA_accession_map = get_assemblies_with_multimap_snps_for_species(metadata_connection_handle)
         for species_info in get_species_info(metadata_connection_handle):
             species_name = species_info["database_name"]
@@ -51,9 +51,9 @@ def export_all_multimap_snps_from_dbsnp_dumps(private_config_xml_file):
             if species_name in assembly_GCA_accession_map:
                 with get_db_conn_for_species(species_info) as species_connection_handle:
                     export_query = "select snp_id, assembly from dbsnp_{0}.multimap_snps " \
-                                   "where assembly in ({1})"\
-                        .format(species_name,",".join(["'{0}'".format(assembly) for assembly in
-                                                       assembly_GCA_accession_map[species_name].keys()]))
+                                   "where assembly in ({1})" \
+                        .format(species_name, ",".join(["'{0}'".format(assembly) for assembly in
+                                                        assembly_GCA_accession_map[species_name].keys()]))
                     logger.info("Running export query: " + export_query)
                     with open(result_file, 'a') as result_file_handle:
                         for snp_id, assembly in get_result_cursor(species_connection_handle, export_query):

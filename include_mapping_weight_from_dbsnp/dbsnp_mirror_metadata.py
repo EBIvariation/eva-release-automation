@@ -27,14 +27,14 @@ def get_species_info(metadata_connection_handle, dbsnp_species_name="all"):
     get_species_info_query = "select database_name, scientific_name, dbsnp_build, pg_host, pg_port from " \
                              "dbsnp_ensembl_species.import_progress a " \
                              "join dbsnp_ensembl_species.dbsnp_build_instance b " \
-                                "on b.dbsnp_build = a.ebi_pg_dbsnp_build "
+                             "on b.dbsnp_build = a.ebi_pg_dbsnp_build "
     if dbsnp_species_name != "all":
         get_species_info_query += "where database_name = '{0}' ".format(dbsnp_species_name)
     get_species_info_query += "order by database_name"
 
     pg_cursor = get_result_cursor(metadata_connection_handle, get_species_info_query)
-    species_set = [{"database_name": result[0], "scientific_name": result[1], "dbsnp_build":result[2],
-                    "pg_host":result[3], "pg_port":result[4]}
+    species_set = [{"database_name": result[0], "scientific_name": result[1], "dbsnp_build": result[2],
+                    "pg_host": result[3], "pg_port": result[4]}
                    for result in pg_cursor.fetchall()]
     pg_cursor.close()
     return species_set

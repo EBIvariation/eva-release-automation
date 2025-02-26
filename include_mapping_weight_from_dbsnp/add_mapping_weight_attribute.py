@@ -11,17 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import logging
+import sys
 import traceback
 
 import click
-import logging
 import psycopg2
-import sys
-from pymongo.uri_parser import parse_uri
-from run_release_in_embassy.release_metadata import get_assemblies_to_import_for_dbsnp_species
 from ebi_eva_common_pyutils.config_utils import get_mongo_uri_for_eva_profile, get_pg_metadata_uri_for_eva_profile
+from pymongo.uri_parser import parse_uri
+
 from include_mapping_weight_from_dbsnp.incorporate_mapping_weight_into_accessioning import \
     incorporate_mapping_weight_into_accessioning
+from run_release_in_embassy.release_metadata import get_assemblies_to_import_for_dbsnp_species
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,6 @@ def import_mapping_weight_attribute_for_dbsnp_species(private_config_xml_file, m
     mongo_host = mongo_params["nodelist"][0][0]
     for assembly in get_assemblies_to_import_for_dbsnp_species(metadata_connection_handle,
                                                                dbsnp_species_taxonomy, release_version=2):
-
         incorporate_mapping_weight_into_accessioning(metadata_params["dbname"], metadata_params["user"],
                                                      metadata_params["host"],
                                                      mongo_params["username"], mongo_params["password"], mongo_host,
