@@ -36,7 +36,7 @@ def test_find_links():
 
 class TestReleaseCounter(TestCase):
 
-    resource_folder = os.path.dirname(__file__)
+    resource_folder = os.path.join(os.path.dirname(__file__), 'resources')
 
     def setUp(self):
         self.private_config_xml_file = os.path.join(self.resource_folder, 'config_xml_file.xml')
