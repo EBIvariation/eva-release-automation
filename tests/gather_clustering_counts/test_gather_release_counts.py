@@ -73,7 +73,7 @@ class TestReleaseCounter(TestCase):
             rs_taxonomy_count = result.RSCountPerTaxonomy
             assert sorted(rs_taxonomy_count.assembly_accessions) == list_cow_assemblies
             assert rs_taxonomy_count.current_rs == 102813585
-            assert rs_taxonomy_count.new_current_rs == 0
+            assert rs_taxonomy_count.new_current_rs == 102813585
             assert rs_taxonomy_count.release_folder == 'Cow_9913'
 
             query = select(RSCountPerTaxonomy).where(RSCountPerTaxonomy.taxonomy_id == 9913,
@@ -91,7 +91,7 @@ class TestReleaseCounter(TestCase):
             rs_assembly_count = result.RSCountPerAssembly
             assert sorted(rs_assembly_count.taxonomy_ids) == [9913]
             assert rs_assembly_count.current_rs == 61038394
-            assert rs_assembly_count.new_current_rs == 0
+            assert rs_assembly_count.new_current_rs == 61038394
             assert rs_assembly_count.release_folder == 'GCA_000003205.6'
 
             query = select(RSCountPerTaxonomyAssembly).where(
@@ -102,7 +102,7 @@ class TestReleaseCounter(TestCase):
             result = session.execute(query).fetchone()
             rs_count_per_taxonomy_assembly = result.RSCountPerTaxonomyAssembly
             assert rs_count_per_taxonomy_assembly.current_rs == 61038394
-            assert rs_count_per_taxonomy_assembly.new_current_rs == 0
+            assert rs_count_per_taxonomy_assembly.new_current_rs == 61038394
             assert rs_count_per_taxonomy_assembly.release_folder == 'Cow_9913/GCA_000003205.6'
 
     def test_write_counts_to_db2(self):
