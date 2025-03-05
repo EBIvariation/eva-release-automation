@@ -24,37 +24,58 @@ from ebi_eva_common_pyutils.common_utils import pretty_print
 from ebi_eva_common_pyutils.config import cfg
 from ebi_eva_common_pyutils.logger import logging_config
 from ebi_eva_internal_pyutils.metadata_utils import get_metadata_connection_handle
+from ebi_eva_internal_pyutils.spring_properties import SpringPropertiesGenerator
 
+from release_automation.release_common_utils import get_release_folder_name
 from release_automation.release_config import load_config
-from run_release_in_embassy.release_common_utils import get_release_folder_name
-from run_release_in_embassy.release_metadata import get_release_assemblies_for_taxonomy, \
-    get_release_for_status_and_version
+from release_automation.release_utils import get_release_inventory_info_for_assembly, \
+    get_release_assemblies_for_taxonomy, get_release_for_status_and_version
 
 logger = logging_config.get_logger(__name__)
 
 
 def get_nextflow_params(taxonomy_id, assembly_accession, release_version):
-    dump_dir = os.path.join(get_species_release_folder(release_version, taxonomy_id), 'dumps')
     release_dir = get_assembly_release_folder(release_version, taxonomy_id, assembly_accession)
     config_param = os.path.join(release_dir, f'nextflow_params_{taxonomy_id}_{assembly_accession}.yaml')
-    os.makedirs(dump_dir, exist_ok=True)
     # Add the same python interpreter as the one we're using to use with the python step scripts
     cfg['executable']['python_interpreter'] = sys.executable
+    release_job_props = get_release_java_props(release_dir, assembly_accession, taxonomy_id, release_version, 'release')
     yaml_data = {
         'assembly': assembly_accession,
-        'dump_dir': dump_dir,
         'executable': cfg['executable'],
         'jar': cfg['jar'],
         'log_file': get_release_log_file_name(release_version, taxonomy_id, assembly_accession),
         'maven': cfg['maven'],
-        'python_path': os.environ['PYTHONPATH'],
         'release_version': release_version,
         'assembly_folder': release_dir,
-        'taxonomy': taxonomy_id
+        'taxonomy': taxonomy_id,
+        'release_job_props': release_job_props
     }
     with open(config_param, 'w') as open_file:
         yaml.safe_dump(yaml_data, open_file)
     return config_param
+
+def get_release_java_props(assembly_release_folder, assembly_accession, taxonomy_id, release_version, file_name):
+    os.makedirs(assembly_release_folder, exist_ok=True)
+    output_file = f"{assembly_release_folder}/{assembly_accession}_{file_name}.properties"
+    private_config_xml_file = cfg.query("maven", "settings_file")
+    profile = cfg.query("maven", "environment")
+    release_species_inventory_table = release_species_inventory_table = cfg.query('release', 'inventory_table')
+    with get_metadata_connection_handle(profile, private_config_xml_file) as metadata_connection_handle:
+        release_properties = get_release_inventory_info_for_assembly(taxonomy_id, assembly_accession, release_species_inventory_table,
+                                                release_version, metadata_connection_handle)
+    properties_string = SpringPropertiesGenerator(profile, private_config_xml_file).get_release_properties(
+        temp_mongo_db=None,
+        job_name=None,
+        assembly_accession=assembly_accession,
+        taxonomy_accession=taxonomy_id,
+        fasta=release_properties['fasta_path'],
+        assembly_report=release_properties['report_path'],
+        contig_naming='INSDC',
+        output_folder=None
+    )
+    open(output_file, "w").write(properties_string)
+    return output_file
 
 
 def get_nextflow_config():
@@ -64,7 +85,7 @@ def get_nextflow_config():
 
 def get_run_release_for_assembly_nextflow():
     curr_dir = os.path.dirname(__file__)
-    return os.path.join(curr_dir, 'run_release_for_assembly.nf')
+    return os.path.join(curr_dir, 'nextflow', 'run_release_for_assembly.nf')
 
 
 def get_release_log_file_name(release_version, taxonomy_id, assembly_accession):

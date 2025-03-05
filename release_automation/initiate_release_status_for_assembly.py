@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 def initiate_release_status_for_assembly(taxonomy_id, assembly_accession, release_version):
     with get_metadata_connection_handle(cfg['maven']['environment'], cfg['maven']['settings_file']) as metadata_connection_handle:
-        release_species_inventory_table = cfg['release']['release_species_inventory_table'],
+        release_species_inventory_table = cfg['release']['inventory_table']
         update_release_progress_status(metadata_connection_handle, release_species_inventory_table,
                                        taxonomy_id, assembly_accession, release_version,
                                        release_status='Started')
