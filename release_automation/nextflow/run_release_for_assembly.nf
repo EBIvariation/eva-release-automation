@@ -37,6 +37,7 @@ process run_dump_active_rs_for_assembly {
 
     script:
     def pipeline_parameters = " --spring.batch.job.names=DUMP_ACTIVE_ACCESSIONS_JOB"
+    pipeline_parameters += " --parameters.outputFolder=\$PWD"
     pipeline_parameters += " --parameters.rsAccDumpFile=" + "release_active_dump"
     """
     java -Xmx${task.memory.toGiga()-1}G -jar $params.jar.release_pipeline --spring.config.location=file:$params.release_job_props $pipeline_parameters
