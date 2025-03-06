@@ -40,29 +40,6 @@ def update_release_progress_status(metadata_connection_handle, release_species_i
     metadata_connection_handle.commit()
 
 
-def get_assemblies_to_import_for_dbsnp_species(metadata_connection_handle, dbsnp_species_taxonomy, release_version):
-    query = "select distinct assembly_accession from dbsnp_ensembl_species.release_assemblies " \
-            "where release_version='{0}' " \
-            "and data_source='dbSNP' and tax_id='{1}'".format(release_version, dbsnp_species_taxonomy)
-    results = get_all_results_for_query(metadata_connection_handle, query)
-    if len(results) > 0:
-        return [result[0] for result in results]
-    return []
-
-
-def get_target_mongo_instance_for_assembly(taxonomy_id, assembly, release_species_inventory_table, release_version,
-                                           metadata_connection_handle):
-    query = (f"select distinct tempmongo_instance from {release_species_inventory_table} "
-             f"where taxonomy = '{taxonomy_id}' and assembly_accession='{assembly}' and "
-             f"release_version = {release_version} and should_be_released and num_rs_to_release > 0")
-    results = get_all_results_for_query(metadata_connection_handle, query)
-    if len(results) == 0:
-        raise Exception(f"Could not find target Mongo instance in Embassy "
-                        f"for taxonomy {taxonomy_id} and assembly {assembly}")
-
-    return results[0][0]
-
-
 def get_release_assemblies_for_taxonomy(taxonomy_id, release_species_inventory_table,
                                         release_version, metadata_connection_handle):
     results = get_all_results_for_query(metadata_connection_handle, "select assembly_accession from {0} "
