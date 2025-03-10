@@ -160,9 +160,6 @@ def list_release_per_status(status, release_version, taxonomy_id, assembly_acces
         pretty_print(header, table)
 
 
-
-
-
 def main():
     argparse = ArgumentParser()
     argparse.add_argument("--list_status", nargs='+',

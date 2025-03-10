@@ -1,7 +1,7 @@
 ebi_eva_common_pyutils[eva-internal]==0.6.12
 click==7.1.2
 pytz==2022.6
-pyyaml==5.3.1
+pyyaml>=5.4
 requests==2.32.3
 retry==0.9.2
 sqlalchemy==2.0.22
