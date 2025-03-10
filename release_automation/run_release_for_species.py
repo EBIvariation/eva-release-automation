@@ -26,10 +26,9 @@ from ebi_eva_common_pyutils.logger import logging_config
 from ebi_eva_internal_pyutils.metadata_utils import get_metadata_connection_handle
 from ebi_eva_internal_pyutils.spring_properties import SpringPropertiesGenerator
 
-from release_automation.release_common_utils import get_release_folder_name
 from release_automation.release_config import load_config
 from release_automation.release_utils import get_release_inventory_info_for_assembly, \
-    get_release_assemblies_for_taxonomy, get_release_for_status_and_version
+    get_release_assemblies_for_taxonomy, get_release_for_status_and_version, get_release_folder_name
 
 logger = logging_config.get_logger(__name__)
 

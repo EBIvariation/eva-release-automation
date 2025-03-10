@@ -12,13 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import datetime
+import os
+from functools import lru_cache
 
+from ebi_eva_common_pyutils.taxonomy import taxonomy
 from ebi_eva_internal_pyutils.pg_utils import get_all_results_for_query
-
-release_vcf_file_categories = ["current_ids", "merged_ids"]
-release_text_file_categories = ["deprecated_ids", "merged_deprecated_ids"]
-vcf_validation_output_file_pattern = "*.vcf.errors_summary.*"
-asm_report_output_file_pattern = "*.vcf.text_assembly_report.*"
 
 
 def update_release_progress_status(metadata_connection_handle, release_species_inventory_table, taxonomy,
@@ -97,3 +95,8 @@ def get_release_for_status_and_version(release_species_inventory_table, metadata
         "ORDER BY release_version, taxonomy, assembly_accession"
     ))
     return get_all_results_for_query(metadata_connection_handle, query)
+
+
+@lru_cache
+def get_release_folder_name(taxonomy_id):
+    return taxonomy.get_normalized_scientific_name_from_ensembl(taxonomy_id)
