@@ -129,7 +129,7 @@ def create_symlink_to_species_folder_from_assembly_folder(current_release_assemb
     public_release_species_assembly_folder = os.path.join(release_properties.public_ftp_current_release_folder,
                                                           by_species_folder_name, species_release_folder_name,
                                                           assembly_accession)
-    if os.path.isdir(public_release_assembly_species_folder):
+    if os.path.isdir(public_release_species_assembly_folder):
         run_command_with_output(f"""Creating symlink from assembly folder {public_release_assembly_species_folder} to
                                 species folder {public_release_species_assembly_folder}""",
                                 'bash -c "cd {0} && ln -sfT {1} {2}"'.format(
@@ -138,7 +138,7 @@ def create_symlink_to_species_folder_from_assembly_folder(current_release_assemb
                                                     public_release_assembly_folder),
                                     public_release_assembly_species_folder))
     else:
-        raise Exception(f"The species folder {public_release_assembly_species_folder} we're linking to does not exist")
+        raise Exception(f"The species folder {public_release_species_assembly_folder} we're linking to does not exist")
 
 
 def recreate_public_release_species_assembly_folder(assembly_accession, public_release_species_assembly_folder):
