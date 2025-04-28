@@ -40,7 +40,8 @@ class TestRunReleaseForSpecies(TestCase):
 
     def tearDown(self):
         if os.path.isdir(self.output_directory):
-            shutil.rmtree(self.output_directory)
+            command = 'docker exec executor rm -rf /usr/local/test_eva_release/*'
+            run_command_with_output('Remove the files in the volume', command)
 
 
     def test_run_release_for_species(self):
