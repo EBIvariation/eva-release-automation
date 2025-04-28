@@ -1,0 +1,10 @@
+executable:
+  nextflow: nextflow
+jar:
+  release_pipeline: /usr/local/software/eva-accession-release.jar
+maven:
+  environment: localhost
+  settings_file: /root/maven.xml
+release:
+  inventory_table: eva_progress_tracker.clustering_release_tracker
+  release_output: /usr/local/test_eva_release/

@@ -15,10 +15,9 @@ workflow {
 
     run_dump_merged_rs_for_assembly(initiate_release_status_for_assembly.out.flag)
     split_release_merged_for_assembly(run_dump_merged_rs_for_assembly.out.release_merged_rs, params.merged_chunk_size)
-    release_merged_rs_for_assembly(split_release_active_for_assembly.out.release_merged_chunks)
+    release_merged_rs_for_assembly(split_release_merged_for_assembly.out.release_merged_chunks)
     sort_and_index_chunk_merged(release_merged_rs_for_assembly.out.release_merged_chunk)
     merge_merged_chunks(sort_and_index_chunk_merged.out.sorted_release_merged_chunk.collect(), sort_and_index_chunk_merged.out.index_release_merged_chunk.collect())
-
 
     run_dump_deprecated_rs_for_assembly(initiate_release_status_for_assembly.out.flag)
     split_release_deprecated_for_assembly(run_dump_deprecated_rs_for_assembly.out.release_deprecated_rs, params.deprecated_chunk_size)
@@ -31,12 +30,15 @@ process initiate_release_status_for_assembly {
 
     label 'short_time', 'med_mem'
 
+    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+
     output:
     val true, emit: flag
 
     script:
+    log_file = "initiate_release_${params.taxonomy}_${params.assembly}_${task.index}.log"
     """
-    $params.executable.python_interpreter -m release_automation.initiate_release_status_for_assembly --taxonomy-id $params.taxonomy --assembly-accession $params.assembly --release-version $params.release_version 1>> $params.log_file 2>&1
+    $params.executable.python_interpreter -m release_automation.initiate_release_status_for_assembly --taxonomy-id $params.taxonomy --assembly-accession $params.assembly --release-version $params.release_version 1>> $log_file 2>&1
     """
 }
 
@@ -44,18 +46,22 @@ process run_dump_active_rs_for_assembly {
 
     label 'long_time', 'med_mem'
 
+    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+
     input:
     val flag
 
     output:
     path "release_active_dump", emit: release_active_rs
+    path "dump_active_rs_${params.taxonomy}_${params.assembly}_${task.index}.log", emit: log_file
 
     script:
+    log_file = "dump_active_rs_${params.taxonomy}_${params.assembly}_${task.index}.log"
     def pipeline_parameters = " --spring.batch.job.names=DUMP_ACTIVE_ACCESSIONS_JOB"
     pipeline_parameters += " --parameters.outputFolder=\$PWD"
     pipeline_parameters += " --parameters.rsAccDumpFile=" + "release_active_dump"
     """
-    java -Xmx${task.memory.toGiga()-1}G -jar $params.jar.release_pipeline --spring.config.location=file:$params.release_job_props $pipeline_parameters
+    java -Xmx${task.memory.toGiga()-1}G -jar $params.jar.release_pipeline --spring.config.location=file:$params.release_job_props $pipeline_parameters 1>> $log_file 2>&1
     """
 }
 
@@ -63,16 +69,25 @@ process split_release_active_for_assembly {
 
     label 'long_time', 'med_mem'
 
+    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+
     input:
     path "release_active_dump"
     val chunk_size
 
     output:
     path "active-rs-chunk-*", emit: release_active_chunks
+    path "split_active_rs_${params.taxonomy}_${params.assembly}_${task.index}.log", emit: log_file
 
     script:
+    log_file = "split_active_rs_${params.taxonomy}_${params.assembly}_${task.index}.log"
     """
-    split -a 5 -d -l ${chunk_size} release_active_dump active-rs-chunk-
+    if [ -s release_active_dump ]
+    then
+      split -a 5 -d -l ${chunk_size} release_active_dump active-rs-chunk- 1>> $log_file 2>&1
+    else
+      touch active-rs-chunk-0 > $log_file
+    fi
     """
 }
 
@@ -80,18 +95,23 @@ process release_active_rs_for_assembly {
 
     label 'med_time', 'med_mem'
 
+    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+
     input:
     each path(rs_chunk)
 
     output:
     path "current_ids_${rs_chunk}.vcf", emit: release_active_chunk
+    path "release_active_rs_${params.taxonomy}_${params.assembly}_${task.index}.log", emit: log_file
 
     script:
+    log_file = "release_active_rs_${params.taxonomy}_${params.assembly}_${task.index}.log"
+
     def pipeline_parameters = " --spring.batch.job.names=ACTIVE_ACCESSIONS_RELEASE_FROM_DB_JOB"
     pipeline_parameters += " --parameters.rsAccFile=" + rs_chunk
     pipeline_parameters += " --parameters.outputFolder=\$PWD"
     """
-    java -Xmx${task.memory.toGiga()-1}G -jar $params.jar.release_pipeline --spring.config.location=file:$params.release_job_props $pipeline_parameters
+    java -Xmx${task.memory.toGiga()-1}G -jar $params.jar.release_pipeline --spring.config.location=file:$params.release_job_props $pipeline_parameters 1>> $log_file 2>&1
     mv *_current_ids.vcf current_ids_${rs_chunk}.vcf
     """
 }
@@ -101,17 +121,21 @@ process sort_and_index_chunk_active {
 
     label 'med_time', 'med_mem'
 
+    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+
     input:
     path(release_active_chunk)
 
     output:
     path "*_sorted.vcf.gz", emit: sorted_release_active_chunk
     path "*_sorted.vcf.gz.csi", emit: index_release_active_chunk
+    path "sort_and_index_active_rs_${params.taxonomy}_${params.assembly}_${task.index}.log", emit: log_file
 
     script:
+    log_file = "sort_and_index_active_rs_${params.taxonomy}_${params.assembly}_${task.index}.log"
     """
-    awk '\$1 ~ /^#/ {print \$0;next} {print \$0 | "sort -k1,1 -k2,2n"}' $release_active_chunk | $params.executable.bcftools view --no-version  -O z -o ${release_active_chunk}_sorted.vcf.gz -
-    $params.executable.bcftools index ${release_active_chunk}_sorted.vcf.gz
+    awk '\$1 ~ /^#/ {print \$0;next} {print \$0 | "sort -k1,1 -k2,2n"}' $release_active_chunk | $params.executable.bcftools view --no-version  -O z -o ${release_active_chunk}_sorted.vcf.gz -  1>> $log_file 2>&1
+    $params.executable.bcftools index ${release_active_chunk}_sorted.vcf.gz 1>> $log_file 2>&1
     """
 }
 
@@ -120,36 +144,43 @@ process merge_active_chunks {
 
     label 'med_time', 'med_mem'
 
+    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+
     input:
     path(release_active_chunks)
-    path(index_release_active_chunk)
+    path(index_release_active_chunks)
 
     output:
     path "active.vcf.gz", emit: release_active_merged
+    path "merge_active_rs_${params.taxonomy}_${params.assembly}_${task.index}.log", emit: log_file
 
     script:
+    log_file = "merge_active_rs_${params.taxonomy}_${params.assembly}_${task.index}.log"
     """
-    $params.executable.bcftools concat -a -o active.vcf.gz -O z $release_active_chunks
+    $params.executable.bcftools concat -a -o active.vcf.gz -O z $release_active_chunks 1>> $log_file 2>&1
     """
 }
-
 
 process run_dump_merged_rs_for_assembly {
 
     label 'long_time', 'med_mem'
 
+    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+
     input:
     val flag
 
     output:
-    path "release_merge_dump", emit: release_merged_rs
+    path "release_merged_dump", emit: release_merged_rs
+    path "dump_merged_rs_${params.taxonomy}_${params.assembly}_${task.index}.log", emit: log_file
 
     script:
+    log_file = "dump_merged_rs_${params.taxonomy}_${params.assembly}_${task.index}.log"
     def pipeline_parameters = " --spring.batch.job.names=DUMP_MERGED_ACCESSIONS_JOB"
     pipeline_parameters += " --parameters.outputFolder=\$PWD"
     pipeline_parameters += " --parameters.rsAccDumpFile=" + "release_merged_dump"
     """
-    java -Xmx${task.memory.toGiga()-1}G -jar $params.jar.release_pipeline --spring.config.location=file:$params.release_job_props $pipeline_parameters
+    java -Xmx${task.memory.toGiga()-1}G -jar $params.jar.release_pipeline --spring.config.location=file:$params.release_job_props $pipeline_parameters 1>> $log_file 2>&1
     """
 }
 
@@ -157,16 +188,25 @@ process split_release_merged_for_assembly {
 
     label 'long_time', 'med_mem'
 
+    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+
     input:
     path "release_merged_dump"
     val chunk_size
 
     output:
     path "merged-rs-chunk-*", emit: release_merged_chunks
+    path "split_merged_rs_${params.taxonomy}_${params.assembly}_${task.index}.log", emit: log_file
 
     script:
+    log_file = "split_merged_rs_${params.taxonomy}_${params.assembly}_${task.index}.log"
     """
-    split -a 5 -d -l ${chunk_size} release_merged_dump merged-rs-chunk-
+    if [ -s release_merged_dump ]
+    then
+      split -a 5 -d -l ${chunk_size} release_merged_dump merged-rs-chunk- 1>> $log_file 2>&1
+    else
+      touch merged-rs-chunk-0 > $log_file
+    fi
     """
 }
 
@@ -174,19 +214,23 @@ process release_merged_rs_for_assembly {
 
     label 'med_time', 'med_mem'
 
+    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+
     input:
     each path(rs_chunk)
 
     output:
     path "merged_ids_${rs_chunk}.vcf", emit: release_merged_chunk
     path "merged_deprecated_ids_${rs_chunk}.txt",  emit: release_merged_deprecated_chunk
+    path "release_merged_rs_${params.taxonomy}_${params.assembly}_${task.index}.log", emit: log_file
 
     script:
+    log_file = "release_merged_rs_${params.taxonomy}_${params.assembly}_${task.index}.log"
     def pipeline_parameters = " --spring.batch.job.names=MERGED_ACCESSIONS_RELEASE_FROM_DB_JOB"
     pipeline_parameters += " --parameters.rsAccFile=" + rs_chunk
     pipeline_parameters += " --parameters.outputFolder=\$PWD"
     """
-    java -Xmx${task.memory.toGiga()-1}G -jar $params.jar.release_pipeline --spring.config.location=file:$params.release_job_props $pipeline_parameters
+    java -Xmx${task.memory.toGiga()-1}G -jar $params.jar.release_pipeline --spring.config.location=file:$params.release_job_props $pipeline_parameters 1>> $log_file 2>&1
     mv *_merged_ids.vcf merged_ids_${rs_chunk}.vcf
     mv *_deprecated_ids.unsorted.txt merged_deprecated_ids_${rs_chunk}.txt
     """
@@ -197,17 +241,21 @@ process sort_and_index_chunk_merged {
 
     label 'med_time', 'med_mem'
 
+    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+
     input:
     path(release_merged_chunk)
 
     output:
     path "*_sorted.vcf.gz", emit: sorted_release_merged_chunk
     path "*_sorted.vcf.gz.csi", emit: index_release_merged_chunk
+    path "sort_index_merged_rs_${params.taxonomy}_${params.assembly}_${task.index}.log", emit: log_file
 
     script:
+    log_file = "sort_index_merged_rs_${params.taxonomy}_${params.assembly}_${task.index}.log"
     """
-    awk '\$1 ~ /^#/ {print \$0;next} {print \$0 | "sort -k1,1 -k2,2n"}' $rrelease_merged_chunk | $params.executable.bcftools view --no-version  -O z -o ${release_merged_chunk}_sorted.vcf.gz -
-    $params.executable.bcftools index ${release_active_chunk}_sorted.vcf.gz
+    awk '\$1 ~ /^#/ {print \$0;next} {print \$0 | "sort -k1,1 -k2,2n"}' $release_merged_chunk | $params.executable.bcftools view --no-version  -O z -o ${release_merged_chunk}_sorted.vcf.gz - 1>> $log_file 2>&1
+    $params.executable.bcftools index ${release_merged_chunk}_sorted.vcf.gz 1>> $log_file 2>&1
     """
 }
 
@@ -216,16 +264,20 @@ process merge_merged_chunks {
 
     label 'med_time', 'med_mem'
 
+    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+
     input:
     path(release_merged_chunks)
     path(index_release_merged_chunk)
 
     output:
     path "merged.vcf.gz", emit: release_merged_merged
+    path "merge_merged_rs_${params.taxonomy}_${params.assembly}_${task.index}.log", emit: log_file
 
     script:
+    log_file = "merge_merged_rs_${params.taxonomy}_${params.assembly}_${task.index}.log"
     """
-    $params.executable.bcftools concat -a -o merged.vcf.gz -O z $release_merged_chunks
+    $params.executable.bcftools concat -a -o merged.vcf.gz -O z $release_merged_chunks 1>> $log_file 2>&1
     """
 }
 
@@ -234,18 +286,22 @@ process run_dump_deprecated_rs_for_assembly {
 
     label 'long_time', 'med_mem'
 
+    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+
     input:
     val flag
 
     output:
     path "release_deprecated_dump", emit: release_deprecated_rs
+    path "dump_deprecated_rs_${params.taxonomy}_${params.assembly}_${task.index}.log", emit: log_file
 
     script:
+    log_file = "dump_deprecated_rs_${params.taxonomy}_${params.assembly}_${task.index}.log"
     def pipeline_parameters = " --spring.batch.job.names=DUMP_DEPRECATED_ACCESSIONS_JOB"
     pipeline_parameters += " --parameters.outputFolder=\$PWD"
     pipeline_parameters += " --parameters.rsAccDumpFile=" + "release_deprecated_dump"
     """
-    java -Xmx${task.memory.toGiga()-1}G -jar $params.jar.release_pipeline --spring.config.location=file:$params.release_job_props $pipeline_parameters
+    java -Xmx${task.memory.toGiga()-1}G -jar $params.jar.release_pipeline --spring.config.location=file:$params.release_job_props $pipeline_parameters 1>> $log_file 2>&1
     """
 }
 
@@ -253,16 +309,25 @@ process split_release_deprecated_for_assembly {
 
     label 'long_time', 'med_mem'
 
+    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+
     input:
     path "release_deprecated_dump"
     val chunk_size
 
     output:
     path "deprecated-rs-chunk-*", emit: release_deprecated_chunks
+    path "split_deprecated_rs_${params.taxonomy}_${params.assembly}_${task.index}.log", emit: log_file
 
     script:
+    log_file = "split_deprecated_rs_${params.taxonomy}_${params.assembly}_${task.index}.log"
     """
-    split -a 5 -d -l ${chunk_size} release_deprecated_dump deprecated-rs-chunk-
+    if [ -s release_deprecated_dump ]
+    then
+      split -a 5 -d -l ${chunk_size} release_deprecated_dump deprecated-rs-chunk- 1>> $log_file 2>&1
+    else
+      touch deprecated-rs-chunk-0 > $log_file
+    fi
     """
 }
 
@@ -272,18 +337,22 @@ process release_deprecated_rs_for_assembly {
 
     label 'med_time', 'med_mem'
 
+    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+
     input:
     each path(rs_chunk)
 
     output:
-    path "deprecated_ids_${rs_chunk}.vcf", emit: release_deprecated_chunk
+    path "deprecated_ids_${rs_chunk}.txt", emit: release_deprecated_chunk
+    path "release_deprecated_rs_${params.taxonomy}_${params.assembly}_${task.index}.log", emit: log_file
 
     script:
+    log_file = "release_deprecated_rs_${params.taxonomy}_${params.assembly}_${task.index}.log"
     def pipeline_parameters = " --spring.batch.job.names=DEPRECATED_ACCESSIONS_RELEASE_FROM_DB_JOB"
     pipeline_parameters += " --parameters.rsAccFile=" + rs_chunk
     pipeline_parameters += " --parameters.outputFolder=\$PWD"
     """
-    java -Xmx${task.memory.toGiga()-1}G -jar $params.jar.release_pipeline --spring.config.location=file:$params.release_job_props $pipeline_parameters
+    java -Xmx${task.memory.toGiga()-1}G -jar $params.jar.release_pipeline --spring.config.location=file:$params.release_job_props $pipeline_parameters 1>> $log_file 2>&1
     mv *_deprecated_ids.unsorted.txt deprecated_ids_${rs_chunk}.txt
     """
 }
@@ -293,15 +362,18 @@ process merge_deprecated_chunks {
 
     label 'med_time', 'med_mem'
 
+    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+
     input:
     path(release_deprecated_chunks)
     path(release_merged_deprecated_chunks)
 
 
     output:
-    path "deprecated.txt", emit: release_merged_deprecated
+    path "deprecated_rs.txt", emit: release_merged_deprecated
 
     script:
+    log_file = "merge_deprecated_rs_${params.taxonomy}_${params.assembly}_${task.index}.log"
     """
     cat $release_deprecated_chunks $release_merged_deprecated_chunks | sort -u  > deprecated_rs.txt
     """

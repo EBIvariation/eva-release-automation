@@ -1,0 +1,55 @@
+services:
+
+  executor:
+    image: executor
+    build:
+      context: ../../../
+      dockerfile: tests/release_automation/docker/executor/Dockerfile
+    container_name: executor
+    restart: always
+    command: tail -f /dev/null
+    depends_on:
+      - postgres
+      - accession_mongodb
+    healthcheck:
+      test: [ "CMD", "python3 -m release_automation.run_release_for_species -h" ]
+      interval: 3s
+      timeout: 10s
+      retries: 5
+    networks:
+      - default
+
+  postgres:
+    image: postgres_db
+    build: postgresql
+    container_name: postgres_db
+    restart: always
+    environment:
+      - POSTGRES_USER=root_user
+      - POSTGRES_PASSWORD=root_pass
+    ports:
+      - 5432:5432
+    healthcheck:
+      test: [ "CMD", "pg_isready" ]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
+
+  accession_mongodb:
+    image: mongo_accession
+    build: mongo_accession
+    container_name: mongo_accession
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root_user
+      MONGO_INITDB_ROOT_PASSWORD: root_pass
+    networks:
+      - default
+
+networks:
+  default:
+    name: release_network
+    driver: bridge
