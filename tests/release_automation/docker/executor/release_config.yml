@@ -1,5 +1,6 @@
 executable:
   nextflow: nextflow
+  bcftools: bcftools
 jar:
   release_pipeline: /usr/local/software/eva-accession-release.jar
 maven:

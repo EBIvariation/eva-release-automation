@@ -8,14 +8,11 @@ services:
     container_name: executor
     restart: always
     command: tail -f /dev/null
+    volumes:
+      - ../resources/release_output_dir:/usr/local/test_eva_release/
     depends_on:
       - postgres
       - accession_mongodb
-    healthcheck:
-      test: [ "CMD", "python3 -m release_automation.run_release_for_species -h" ]
-      interval: 3s
-      timeout: 10s
-      retries: 5
     networks:
       - default
 
@@ -23,7 +20,6 @@ services:
     image: postgres_db
     build: postgresql
     container_name: postgres_db
-    restart: always
     environment:
       - POSTGRES_USER=root_user
       - POSTGRES_PASSWORD=root_pass
@@ -34,6 +30,7 @@ services:
       interval: 3s
       timeout: 5s
       retries: 5
+      start_period: 10s
     networks:
       - default
 
