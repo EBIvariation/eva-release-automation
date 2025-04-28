@@ -5,19 +5,19 @@
             <properties>
                 <eva.evapro.user>root_user</eva.evapro.user>
                 <eva.evapro.password>root_pass</eva.evapro.password>
-                <eva.evapro.jdbc.url>jdbc:postgresql://localhost:5432/metadata</eva.evapro.jdbc.url>
+                <eva.evapro.jdbc.url>jdbc:postgresql://localhost:5433/metadata</eva.evapro.jdbc.url>
                 <eva.evapro.eva-stats.schema>eva_stats</eva.evapro.eva-stats.schema>
                 <eva.count-stats.url>https://localhost/count-stats</eva.count-stats.url>
                 <eva.count-stats.username>root_user</eva.count-stats.username>
                 <eva.count-stats.password>root_pass</eva.count-stats.password>
-                <eva.accession.jdbc.url>jdbc:postgresql://localhost:5432/accession_jt</eva.accession.jdbc.url>
+                <eva.accession.jdbc.url>jdbc:postgresql://localhost:5433/accession_jt</eva.accession.jdbc.url>
                 <eva.accession.user>root_user</eva.accession.user>
                 <eva.accession.password>root_pass</eva.accession.password>
                 <eva.accession.mongo.database>eva_accession_sharded</eva.accession.mongo.database>
                 <eva.mongo.user>root_user</eva.mongo.user>
                 <eva.mongo.passwd>root_pass</eva.mongo.passwd>
                 <eva.mongo.passwd.url-encoded>root_pass</eva.mongo.passwd.url-encoded>
-                <eva.mongo.host>localhost:27017</eva.mongo.host>
+                <eva.mongo.host>localhost:27018</eva.mongo.host>
             </properties>
         </profile>
     </profiles>
