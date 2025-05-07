@@ -48,7 +48,8 @@ def get_nextflow_params(taxonomy_id, assembly_accession, release_version):
         'release_version': release_version,
         'assembly_folder': release_dir,
         'taxonomy': taxonomy_id,
-        'release_job_props': release_job_props
+        'release_job_props': release_job_props,
+        'output_dir': release_dir
     }
     with open(config_param, 'w') as open_file:
         yaml.safe_dump(yaml_data, open_file)
