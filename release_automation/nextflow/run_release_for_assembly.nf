@@ -4,33 +4,59 @@ nextflow.enable.dsl=2
 params.active_chunk_size = 10000000
 params.merged_chunk_size = 100000
 params.deprecated_chunk_size = 100000
+output_log = params.output_dir + '/log_files'
+
 workflow {
 
     initiate_release_status_for_assembly()
+
+    // Release active variants
     run_dump_active_rs_for_assembly(initiate_release_status_for_assembly.out.flag)
     split_release_active_for_assembly(run_dump_active_rs_for_assembly.out.release_active_rs, params.active_chunk_size)
     release_active_rs_for_assembly(split_release_active_for_assembly.out.release_active_chunks)
     sort_and_index_chunk_active(release_active_rs_for_assembly.out.release_active_chunk)
     merge_active_chunks(sort_and_index_chunk_active.out.sorted_release_active_chunk.collect(), sort_and_index_chunk_active.out.index_release_active_chunk.collect())
 
+    // Release merged variants
     run_dump_merged_rs_for_assembly(initiate_release_status_for_assembly.out.flag)
     split_release_merged_for_assembly(run_dump_merged_rs_for_assembly.out.release_merged_rs, params.merged_chunk_size)
     release_merged_rs_for_assembly(split_release_merged_for_assembly.out.release_merged_chunks)
     sort_and_index_chunk_merged(release_merged_rs_for_assembly.out.release_merged_chunk)
     merge_merged_chunks(sort_and_index_chunk_merged.out.sorted_release_merged_chunk.collect(), sort_and_index_chunk_merged.out.index_release_merged_chunk.collect())
 
+    // Export deprecated variants
     run_dump_deprecated_rs_for_assembly(initiate_release_status_for_assembly.out.flag)
     split_release_deprecated_for_assembly(run_dump_deprecated_rs_for_assembly.out.release_deprecated_rs, params.deprecated_chunk_size)
     release_deprecated_rs_for_assembly(split_release_deprecated_for_assembly.out.release_deprecated_chunks)
+
+    // merge & copy the files with the updated sequence to the output directory
     merge_deprecated_chunks(release_deprecated_rs_for_assembly.out.release_deprecated_chunk.collect(), release_merged_rs_for_assembly.out.release_merged_deprecated_chunk.collect())
 
+    vcf_channel = channel.of().concat(merge_active_chunks.out.release_active_merged, merge_merged_chunks.out.release_merged_merged)
+    // copy the files with the updated sequence to the output directory
+    update_sequence_names_to_ena(vcf_channel)
+
+
+
+    // Validate VCF files
+    vcf_validator_release_vcf_files(vcf_channel)
+    assembly_check_release_vcf_files(vcf_channel)
+    analyze_vcf_validator_results(vcf_validator_release_vcf_files.out.vcf_validator_results)
+    analyze_assembly_checker_results(assembly_check_release_vcf_files.out.assembly_check_report)
+    validate_rs_release_files(merge_active_chunks.out.release_active_merged, merge_merged_chunks.out.release_merged_merged, merge_deprecated_chunks.out.release_merged_deprecated)
+
+    count_rs_ids_in_release_vcf(update_sequence_names_to_ena.out.release_vcf_output_file)
+    count_rs_ids_in_release_txt(merge_deprecated_chunks.out.release_merged_deprecated)
+    merge_count_files(count_rs_ids_in_release_vcf.out.count_vcf.collect(), count_rs_ids_in_release_txt.out.count_txt)
+    update_release_status_for_assembly(merge_count_files.out.readme_count, validate_rs_release_files.out.flag)
 }
+
 
 process initiate_release_status_for_assembly {
 
     label 'short_time', 'med_mem'
 
-    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+    publishDir path: output_log, pattern: '*.log', mode: 'copy', overwrite: true
 
     output:
     val true, emit: flag
@@ -38,7 +64,7 @@ process initiate_release_status_for_assembly {
     script:
     log_file = "initiate_release_${params.taxonomy}_${params.assembly}_${task.index}.log"
     """
-    $params.executable.python_interpreter -m release_automation.initiate_release_status_for_assembly --taxonomy-id $params.taxonomy --assembly-accession $params.assembly --release-version $params.release_version 1>> $log_file 2>&1
+    $params.executable.python_interpreter -m release_automation.initiate_release_status_for_assembly --taxonomy_id $params.taxonomy --assembly_accession $params.assembly --release_version $params.release_version 1>> $log_file 2>&1
     """
 }
 
@@ -46,7 +72,7 @@ process run_dump_active_rs_for_assembly {
 
     label 'long_time', 'med_mem'
 
-    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+    publishDir path: output_log, pattern: '*.log', mode: 'copy', overwrite: true
 
     input:
     val flag
@@ -69,7 +95,7 @@ process split_release_active_for_assembly {
 
     label 'long_time', 'med_mem'
 
-    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+    publishDir path: output_log, pattern: '*.log', mode: 'copy', overwrite: true
 
     input:
     path "release_active_dump"
@@ -95,7 +121,7 @@ process release_active_rs_for_assembly {
 
     label 'med_time', 'med_mem'
 
-    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+    publishDir path: output_log, pattern: '*.log', mode: 'copy', overwrite: true
 
     input:
     each path(rs_chunk)
@@ -121,7 +147,7 @@ process sort_and_index_chunk_active {
 
     label 'med_time', 'med_mem'
 
-    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+    publishDir path: output_log, pattern: '*.log', mode: 'copy', overwrite: true
 
     input:
     path(release_active_chunk)
@@ -144,20 +170,21 @@ process merge_active_chunks {
 
     label 'med_time', 'med_mem'
 
-    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+    publishDir path: output_log, pattern: '*.log', mode: 'copy', overwrite: true
 
     input:
     path(release_active_chunks)
     path(index_release_active_chunks)
 
     output:
-    path "active.vcf.gz", emit: release_active_merged
+    path "$active_vcf", emit: release_active_merged
     path "merge_active_rs_${params.taxonomy}_${params.assembly}_${task.index}.log", emit: log_file
 
     script:
+    active_vcf = "${params.taxonomy}_${params.assembly}_current_ids.before_rename.vcf.gz"
     log_file = "merge_active_rs_${params.taxonomy}_${params.assembly}_${task.index}.log"
     """
-    $params.executable.bcftools concat -a -o active.vcf.gz -O z $release_active_chunks 1>> $log_file 2>&1
+    $params.executable.bcftools concat -a -o $active_vcf -O z $release_active_chunks 1>> $log_file 2>&1
     """
 }
 
@@ -165,7 +192,7 @@ process run_dump_merged_rs_for_assembly {
 
     label 'long_time', 'med_mem'
 
-    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+    publishDir path: output_log, pattern: '*.log', mode: 'copy', overwrite: true
 
     input:
     val flag
@@ -188,7 +215,7 @@ process split_release_merged_for_assembly {
 
     label 'long_time', 'med_mem'
 
-    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+    publishDir path: output_log, pattern: '*.log', mode: 'copy', overwrite: true
 
     input:
     path "release_merged_dump"
@@ -214,7 +241,7 @@ process release_merged_rs_for_assembly {
 
     label 'med_time', 'med_mem'
 
-    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+    publishDir path: output_log, pattern: '*.log', mode: 'copy', overwrite: true
 
     input:
     each path(rs_chunk)
@@ -241,7 +268,7 @@ process sort_and_index_chunk_merged {
 
     label 'med_time', 'med_mem'
 
-    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+    publishDir path: output_log, pattern: '*.log', mode: 'copy', overwrite: true
 
     input:
     path(release_merged_chunk)
@@ -264,20 +291,22 @@ process merge_merged_chunks {
 
     label 'med_time', 'med_mem'
 
-    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+    publishDir path: output_log, pattern: '*.log', mode: 'copy', overwrite: true
 
     input:
     path(release_merged_chunks)
     path(index_release_merged_chunk)
 
     output:
-    path "merged.vcf.gz", emit: release_merged_merged
+    path "$merged_vcf", emit: release_merged_merged
     path "merge_merged_rs_${params.taxonomy}_${params.assembly}_${task.index}.log", emit: log_file
 
     script:
     log_file = "merge_merged_rs_${params.taxonomy}_${params.assembly}_${task.index}.log"
+    merged_vcf = "${params.taxonomy}_${params.assembly}_merged_ids.before_rename.vcf.gz"
+
     """
-    $params.executable.bcftools concat -a -o merged.vcf.gz -O z $release_merged_chunks 1>> $log_file 2>&1
+    $params.executable.bcftools concat -a -o $merged_vcf -O z $release_merged_chunks 1>> $log_file 2>&1
     """
 }
 
@@ -286,7 +315,7 @@ process run_dump_deprecated_rs_for_assembly {
 
     label 'long_time', 'med_mem'
 
-    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+    publishDir path: output_log, pattern: '*.log', mode: 'copy', overwrite: true
 
     input:
     val flag
@@ -309,7 +338,7 @@ process split_release_deprecated_for_assembly {
 
     label 'long_time', 'med_mem'
 
-    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+    publishDir path: output_log, pattern: '*.log', mode: 'copy', overwrite: true
 
     input:
     path "release_deprecated_dump"
@@ -337,7 +366,7 @@ process release_deprecated_rs_for_assembly {
 
     label 'med_time', 'med_mem'
 
-    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+    publishDir path: output_log, pattern: '*.log', mode: 'copy', overwrite: true
 
     input:
     each path(rs_chunk)
@@ -362,7 +391,7 @@ process merge_deprecated_chunks {
 
     label 'med_time', 'med_mem'
 
-    publishDir path: params.output_dir, pattern: '*.log', mode: 'copy', overwrite: true
+    publishDir path: params.output_dir, pattern: '*.txt.gz', mode: 'copy', overwrite: true
 
     input:
     path(release_deprecated_chunks)
@@ -370,11 +399,238 @@ process merge_deprecated_chunks {
 
 
     output:
-    path "deprecated_rs.txt", emit: release_merged_deprecated
+    path "$final_file_deprecated", emit: release_merged_deprecated
 
     script:
-    log_file = "merge_deprecated_rs_${params.taxonomy}_${params.assembly}_${task.index}.log"
+    final_file_deprecated = "${params.taxonomy}_${params.assembly}_deprecated_ids.txt.gz"
     """
-    cat $release_deprecated_chunks $release_merged_deprecated_chunks | sort -u  > deprecated_rs.txt
+    cat $release_deprecated_chunks $release_merged_deprecated_chunks | sort -u | gzip -c  > $final_file_deprecated
+    """
+}
+
+
+
+process vcf_validator_release_vcf_files {
+
+    label 'med_time', 'med_mem'
+
+    publishDir path: output_log, pattern: '*.log', mode: 'copy', overwrite: true
+
+    input:
+    path vcf_file
+
+    output:
+    path "vcf_format/*.errors.*.txt", emit: vcf_validator_results
+    path "vcf_format/*.vcf_format.log", emit: vcf_validator_log
+
+    script:
+    """
+    trap 'if [[ \$? == 1 ]]; then exit 0; fi' EXIT
+
+    mkdir -p vcf_format
+    $params.executable.vcf_validator -i ${vcf_file}  -r text -o vcf_format > vcf_format/${vcf_file}.vcf_format.log 2>&1
+    """
+}
+
+process assembly_check_release_vcf_files {
+
+    label 'med_time', 'med_mem'
+
+    publishDir path: output_log, pattern: '*.log', mode: 'copy', overwrite: true
+
+    input:
+    path(vcf_file)
+
+    output:
+    path "assembly_check/*text_assembly_report*", emit: assembly_check_report
+    path "assembly_check/*.assembly_check.log", emit: assembly_check_log
+
+    script:
+    """
+    trap 'if [[ \$? == 1 || \$? == 139 ]]; then exit 0; fi' EXIT
+
+    mkdir -p assembly_check
+    $params.executable.vcf_assembly_checker -i $vcf_file -f $params.fasta_file -a $params.assembly_report -r summary,text  -o assembly_check > assembly_check/${vcf_file}.assembly_check.log 2>&1
+    """
+}
+
+process analyze_vcf_validator_results {
+
+    label 'med_time', 'default_mem'
+
+    input:
+    path vcf_validator_log
+
+    output:
+    val true, emit: flag
+
+    script:
+    """
+    echo "Error: Duplicated variant" > allowed_errors.txt
+    echo "Warning: Reference and alternate alleles " >> allowed_errors.txt
+    echo "do not share the first nucleotide" >> allowed_errors.txt
+    echo "the input file is not valid" >> allowed_errors.txt
+    echo "the input file is valid" >> allowed_errors.txt
+    echo "not listed in a valid meta-data ALT entry" >> allowed_errors.txt
+    echo "Chromosome is not a string without colons or whitespaces" >> allowed_errors.txt
+
+    NB_ERROR=\$(cat $vcf_validator_log | grep -vFf allowed_errors.txt | wc -l)
+    if [ ! "\$NB_ERROR" -eq "0" ]; then
+        echo "\$NB_ERROR Unusual error(s) found in VCF validation log: $vcf_validator_log"
+        exit 1
+    fi
+    """
+}
+
+
+process analyze_assembly_checker_results {
+
+    label 'med_time', 'med_mem'
+
+    input:
+    path assembly_checker_log
+
+    output:
+    val true, emit: flag
+
+    script:
+    """
+    echo "not present in FASTA file"> allowed_errors.txt
+    echo  "does not match the reference sequence" >> allowed_errors.txt
+    echo  "Multiple synonyms  found for contig" >> allowed_errors.txt
+
+    NB_ERROR=\$(cat $assembly_checker_log | grep -vFf allowed_errors.txt | wc -l)
+    if [ ! "\$NB_ERROR" -eq "0" ]; then
+        echo "\$NB_ERROR Unusual error(s) found in assembly report log: $assembly_checker_log"
+        exit 1
+    fi
+    """
+}
+
+process count_rs_ids_in_release_vcf {
+
+    label 'med_time', 'med_mem'
+
+    input:
+    path vcf_file
+
+    output:
+    path "${vcf_file}.count", emit: count_vcf
+
+    script:
+    """
+    COUNT=\$(gunzip -c $vcf_file | grep -v "^#" | cut -f 3 | sed s/";"/\\n/g | sort -T . -u --parallel=4 | wc -l)
+    echo -e "$vcf_file\\t\${COUNT}" > ${vcf_file}.count
+    """
+}
+
+process count_rs_ids_in_release_txt {
+
+    label 'med_time', 'med_mem'
+
+    input:
+    path txt_file
+
+    output:
+    path "${txt_file}.count", emit: count_txt
+
+    script:
+    """
+    COUNT=\$(gunzip -c $txt_file | cut -f1 | uniq | wc -l)
+    echo -e "$txt_file\\t\${COUNT}" > ${txt_file}.count
+    """
+}
+
+
+process merge_count_files {
+
+    label 'long_time', 'med_mem'
+
+    publishDir path: params.output_dir, mode: 'copy', overwrite: true
+
+    input:
+    path vcf_based_ids_counts
+    path txt_based_ids_count
+
+    output:
+    path "README_rs_ids_counts.txt", emit: readme_count
+
+    script:
+    log_file = "validate_rs_release_files_${params.taxonomy}_${params.assembly}_${task.index}.log"
+    """
+    cat  $vcf_based_ids_counts $txt_based_ids_count | sort > README_rs_ids_counts.txt
+    """
+
+
+}
+process validate_rs_release_files {
+
+    label 'long_time', 'med_mem'
+
+    publishDir path: output_log, pattern: '*.log', mode: 'copy', overwrite: true
+
+    input:
+    path active_rs_ids_file
+    path merged_rs_ids_file
+    path deprecated_rs_ids_file
+
+    output:
+    val true, emit: flag
+
+    script:
+    log_file = "validate_rs_release_files_${params.taxonomy}_${params.assembly}_${task.index}.log"
+    """
+    $params.executable.python_interpreter -m release_automation.validate_rs_release_files \
+    --active_rs_ids_file $active_rs_ids_file --merged_rs_ids_file $merged_rs_ids_file \
+    --deprecated_rs_ids_file $deprecated_rs_ids_file --private_config_xml_file $params.maven.settings_file \
+    --profile $params.maven.environment --taxonomy_id $params.taxonomy --assembly_accession $params.assembly \
+    --output_directory . 1>> $log_file 2>&1
+    """
+}
+
+process update_sequence_names_to_ena {
+
+    label 'med_time', 'med_mem'
+
+    publishDir path: output_log, pattern: '*.log', mode: 'copy', overwrite: true
+    publishDir path: params.output_dir, pattern: '*.vcf.gz', mode: 'copy', overwrite: true
+
+
+    input:
+    path release_vcf_file
+
+    output:
+    path release_vcf_output_file, emit: release_vcf_output_file
+    path release_vcf_output_index, emit: release_vcf_output_index
+
+    script:
+    log_file = "update_sequence_names_to_ena_${release_vcf_file.getSimpleName()}.log"
+    // Remove three extensions ".before_rename.vcf.gz". Cannot use getSimpleName as there is a "." in the assembly accession
+    release_vcf_output_file=release_vcf_file.getName().replace('before_rename.','')
+    release_vcf_output_index="${release_vcf_output_file}.csi"
+    """
+    $params.executable.convert_vcf_file -i $release_vcf_file -o $release_vcf_output_file -c enaSequenceName 1>> $log_file 2>&1
+    $params.executable.bcftools index $release_vcf_output_file 1>> $log_file 2>&1
+    """
+}
+
+process update_release_status_for_assembly {
+
+    label 'short_time', 'med_mem'
+
+    publishDir path: output_log, pattern: '*.log', mode: 'copy', overwrite: true
+
+    input:
+    path readme_count
+    val validate_rs_release_files_flag
+
+    output:
+    val true, emit: flag
+
+    script:
+    log_file = "finalise_release_${params.taxonomy}_${params.assembly}_${task.index}.log"
+    """
+    $params.executable.python_interpreter -m release_automation.update_release_status_for_assembly --taxonomy_id $params.taxonomy --assembly_accession $params.assembly --release_version $params.release_version 1>> $log_file 2>&1
+
     """
 }

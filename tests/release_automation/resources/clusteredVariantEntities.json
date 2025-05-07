@@ -1,0 +1,77 @@
+[
+  {
+    "_comment": "Active cluster variant",
+    "_id": "E1DF54BE2F5B1E0055D03FD4BAFD0D4D07A5760F",
+    "asm": "GCA_000005425.2",
+    "tax": 4530,
+    "contig": "AP008207.2",
+    "start": 14614,
+    "type": "SNV",
+    "accession": 352949964,
+    "version": 1,
+    "createdDate": "2013-03-22T08:38:00.000Z"
+  },
+  {
+    "_comment": "Active cluster variant",
+    "_id": "A72591920030733321528632E5D0EFC7E3624EE8",
+    "asm": "GCA_000005425.2",
+    "tax": 4530,
+    "contig": "AP008207.2",
+    "start": 2044,
+    "type": "SNV",
+    "validated": true,
+    "accession": 351255950,
+    "version": 1,
+    "createdDate": "2013-03-22T08:38:00.000Z"
+  },
+  {
+    "_comment": "Active cluster variant",
+    "_id": "60D46E8F4A11D690A57EA0F2AEF900A5164B54ED",
+    "asm": "GCA_000005425.2",
+    "tax": 4530,
+    "contig": "AP008207.2",
+    "start": 9802,
+    "type": "SNV",
+    "validated": true,
+    "accession": 347910601,
+    "version": 1,
+    "createdDate": "2013-03-22T08:38:00.000Z"
+  },
+  {
+    "_comment": "Active cluster variant",
+    "_id": "9AF8B436A03E6E0819DCCE5ECF62A594385C254D",
+    "asm": "GCA_000005425.2",
+    "tax": 4530,
+    "contig": "AP008207.2",
+    "start": 11738,
+    "type": "SNV",
+    "accession": 352002741,
+    "version": 1,
+    "createdDate": "2013-03-22T08:38:00.000Z"
+  },
+  {
+    "_comment": "Active cluster variant",
+    "_id": "6E3DF64D16783AE004395EDEEAE92E6DF3B8D11F",
+    "asm": "GCA_000005425.2",
+    "tax": 4530,
+    "contig": "AP008207.2",
+    "start": 1642,
+    "type": "SNV",
+    "accession": 349684630,
+    "version": 1,
+    "createdDate": "2013-03-22T08:38:00.000Z"
+  },
+  {
+    "_comment": "MERGE target and Active cluster variant",
+    "_id": "24ABB53A75CFE70D462BC85E02C254DCA90DB54E",
+    "asm": "GCA_000005425.2",
+    "tax": 4530,
+    "contig": "AP008207.2",
+    "start": 641,
+    "type": "SNV",
+    "validated": true,
+    "accession": 353092667,
+    "version": 1,
+    "createdDate": "2021-03-22T08:38:00.000Z"
+  }
+]

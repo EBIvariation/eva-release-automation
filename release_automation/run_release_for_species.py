@@ -36,11 +36,20 @@ logger = logging_config.get_logger(__name__)
 def get_nextflow_params(taxonomy_id, assembly_accession, release_version):
     release_dir = get_assembly_release_folder(release_version, taxonomy_id, assembly_accession)
     config_param = os.path.join(release_dir, f'nextflow_params_{taxonomy_id}_{assembly_accession}.yaml')
+    private_config_xml_file = cfg.query("maven", "settings_file")
+    profile = cfg.query("maven", "environment")
+    release_species_inventory_table = cfg.query('release', 'inventory_table')
+    with get_metadata_connection_handle(profile, private_config_xml_file) as metadata_connection_handle:
+        release_properties = get_release_inventory_info_for_assembly(taxonomy_id, assembly_accession,
+                                                                 release_species_inventory_table,
+                                                                 release_version, metadata_connection_handle)
     # Add the same python interpreter as the one we're using to use with the python step scripts
     cfg['executable']['python_interpreter'] = sys.executable
     release_job_props = get_release_java_props(release_dir, assembly_accession, taxonomy_id, release_version, 'release')
     yaml_data = {
         'assembly': assembly_accession,
+        'fasta_file': release_properties['fasta_path'],
+        'assembly_report': release_properties['report_path'],
         'executable': cfg['executable'],
         'jar': cfg['jar'],
         'log_file': get_release_log_file_name(release_version, taxonomy_id, assembly_accession),

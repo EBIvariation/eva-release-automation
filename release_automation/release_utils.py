@@ -18,6 +18,23 @@ from functools import lru_cache
 from ebi_eva_common_pyutils.taxonomy import taxonomy
 from ebi_eva_internal_pyutils.pg_utils import get_all_results_for_query
 
+collections_assembly_attribute_map = {
+    "dbsnpSubmittedVariantEntity": "seq",
+    "dbsnpSubmittedVariantOperationEntity": "inactiveObjects.seq",
+    "submittedVariantEntity": "seq",
+    "submittedVariantOperationEntity": "inactiveObjects.seq",
+    "dbsnpClusteredVariantEntity": "asm",
+    "dbsnpClusteredVariantOperationEntity": "inactiveObjects.asm",
+    "clusteredVariantEntity": "asm",
+    "clusteredVariantOperationEntity": "inactiveObjects.asm"
+}
+
+submitted_collections_taxonomy_attribute_map = {
+    "dbsnpSubmittedVariantEntity": "tax",
+    "dbsnpSubmittedVariantOperationEntity": "inactiveObjects.tax",
+    "submittedVariantEntity": "tax",
+    "submittedVariantOperationEntity": "inactiveObjects.tax"
+}
 
 def update_release_progress_status(metadata_connection_handle, release_species_inventory_table, taxonomy,
                                    assembly_accession, release_version, release_status):
