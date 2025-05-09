@@ -1,0 +1,46 @@
+[
+  {
+    
+    "_comment": "Merge Operation resulting in merged clustered variant in the release",
+    "eventType": "MERGED",
+    "accession": 353092668,
+    "mergeInto": 353092667,
+    "reason": "After remapping to GCA_000005425.2, RS IDs mapped to the same locus.",
+    "inactiveObjects": [
+      {
+        "hashedMessage": "24ABB53A75CFE70D462BC85E02C254DCA90DB54E",
+        "asm": "GCA_000005425.2",
+        "tax": 4530,
+        "contig": "AP008207.2",
+        "start": 641,
+        "type": "SNV",
+        "validated": true,
+        "accession": 353092668,
+        "version": 1,
+        "createdDate": "2013-03-22T08:38:00.000Z"
+      }
+    ],
+    "createdDate": "2021-03-22T08:38:00.000Z"
+  },
+  {
+    "_comment": "Deprecated Operation resulting in deprecated in the release ",
+    "eventType": "DEPRECATED",
+    "accession": 348446724,
+    "reason": "Remapped variant had the same SS ID as the one imported from dbSNP. See EVA-2936.",
+    "inactiveObjects": [
+        {
+        "hashedMessage": "593532FDC7AFB598A0B7A1C4001A65EBF679F0FE",
+        "asm": "GCA_000005425.2",
+        "tax": 4530,
+        "contig": "AP008207.2",
+        "start": 8671,
+        "type": "SNV",
+        "validated": true,
+        "accession": 348446724,
+        "version": 1,
+        "createdDate": "2013-03-22T08:38:00.000Z"
+        }
+    ],
+    "createdDate": "2022-07-29T14:10:38.886Z"
+  }
+]

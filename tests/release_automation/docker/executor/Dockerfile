@@ -2,7 +2,8 @@ FROM ubuntu:22.04
 
 ENV JAVA_VERSION=8
 ENV NXF_VER=21.10.5
-ENV EVA_ACCESSION_VERSION=v0.6.21
+ENV VCF_VALIDATOR_VERSION=0.9.4
+ENV CONTIG_NAME_CONVERTER_VERSION=v0.0.2
 
 # install utility libs, python and java
 RUN apt update
@@ -23,11 +24,23 @@ RUN curl -O -J https://dl.cloudsmith.io/public/ebivariation/packages/maven/uk/ac
 RUN cp eva-accession-release-*exec.jar /usr/local/software/eva-accession-release.jar
 
 
+# install vcf_validator
+RUN curl -LJo /usr/local/bin/vcf_validator https://github.com/EBIvariation/vcf-validator/releases/download/v${VCF_VALIDATOR_VERSION}/vcf_validator_linux \
+    && chmod 755 /usr/local/bin/vcf_validator
+
+# install vcf_assembly_checker
+RUN curl -LJo /usr/local/bin/vcf_assembly_checker https://github.com/EBIvariation/vcf-validator/releases/download/v${VCF_VALIDATOR_VERSION}/vcf_assembly_checker_linux \
+    && chmod 755 /usr/local/bin/vcf_assembly_checker
+
+# Install contig_name_converter
+#RUN pip install -q "git+https://github.com/EBIvariation/contig_name_converter.git@${CONTIG_NAME_CONVERTER_VERSION}"
+RUN pip install -q "git+https://github.com/tcezard/contig_name_converter.git@EVA3793-allow-accession-as-id"
+
 COPY tests/release_automation/docker/executor/maven.xml /root
 COPY tests/release_automation/docker/executor/release_config.yml /root/.release_config.yml
 COPY tests/release_automation/docker/executor/nextflow.config /root/.nextflow/config
 COPY . /opt/
 
-RUN cd /opt/ && ls && python3 -m pip install .
+RUN cd /opt/ && python3 -m pip install .
 
 WORKDIR /usr/local/test_eva_release/

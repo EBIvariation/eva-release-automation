@@ -1,0 +1,53 @@
+[
+    {
+    "_comment": "Update Operation originating from a normal merged event",
+    "eventType": "UPDATED",
+    "accession": 256302617,
+    "reason": "Original rs353092668 associated with SS was merged into rs353092667.",
+    "inactiveObjects": [
+      {
+        "hashedMessage": "8B9A1D285F8F83A3A7DAF382A819DE1A1013CEED",
+        "seq": "GCA_000005425.2",
+        "tax": 4530,
+        "study": "BGI_BATCH_A",
+        "contig": "AP008207.2",
+        "start": 641,
+        "ref": "C",
+        "alt": "T",
+        "rs": 353092668,
+        "evidence": false,
+        "asmMatch": true,
+        "allelesMatch": true,
+        "validated": false,
+        "accession": 256302617,
+        "version": 1,
+        "createdDate": "2010-08-27T10:40:00.000Z"
+      }
+    ],
+    "createdDate": "2021-03-22T08:38:00.000Z"
+  },
+    {
+    "_comment": "Deprecate Operation that results in deprecated in the release",
+    "eventType": "DEPRECATED",
+    "accession": 256302784,
+    "reason": "Remapped variant had the same SS ID as the one imported from dbSNP. See EVA-2936.",
+    "inactiveObjects": [
+      {
+            "hashedMessage": "8A7F06D96A84714191E8A5D3A1B188AB8AAF282A",
+            "seq": "GCA_000005425.2",
+            "tax": 4530,
+            "study": "BGI_BATCH_A",
+            "contig": "AP008207.2",
+            "start": 8671,
+            "ref": "A",
+            "alt": "G",
+            "rs": 348446724,
+            "evidence": false,
+            "accession": 256302784,
+            "version": 1,
+            "createdDate": "2010-08-27T10:40:00.000Z"
+          }
+    ],
+    "createdDate": "2022-07-29T14:10:07.189Z"
+  }
+]

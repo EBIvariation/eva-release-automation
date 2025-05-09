@@ -18,6 +18,7 @@
                 <eva.mongo.passwd>root_pass</eva.mongo.passwd>
                 <eva.mongo.passwd.url-encoded>root_pass</eva.mongo.passwd.url-encoded>
                 <eva.mongo.host>mongo_accession:27017</eva.mongo.host>
+                <eva.mongo.auth.db>admin</eva.mongo.auth.db>
             </properties>
         </profile>
     </profiles>
