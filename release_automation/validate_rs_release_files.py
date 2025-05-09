@@ -256,10 +256,6 @@ def read_next_batch_of_missing_ids(missing_rs_ids_file_handle):
 
 
 def get_unique_release_rs_ids(active_rs_ids_file, merged_rs_ids_file, deprecated_rs_ids_file, output_directory):
-    # active_rs_ids_file = folder_prefix + "_current_ids_with_genbank.vcf.gz"
-    # merged_rs_ids_file = folder_prefix + "_merged_ids_with_genbank.vcf.gz"
-    # deprecated_rs_ids_file = folder_prefix + "_deprecated_ids.txt.gz"
-
     all_ids_file = os.path.join(output_directory, "_all_release_ids.txt")
     unique_ids_file = os.path.join(output_directory, "_unique_release_ids.txt")
 

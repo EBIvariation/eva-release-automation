@@ -28,15 +28,11 @@ workflow {
     run_dump_deprecated_rs_for_assembly(initiate_release_status_for_assembly.out.flag)
     split_release_deprecated_for_assembly(run_dump_deprecated_rs_for_assembly.out.release_deprecated_rs, params.deprecated_chunk_size)
     release_deprecated_rs_for_assembly(split_release_deprecated_for_assembly.out.release_deprecated_chunks)
-
-    // merge & copy the files with the updated sequence to the output directory
     merge_deprecated_chunks(release_deprecated_rs_for_assembly.out.release_deprecated_chunk.collect(), release_merged_rs_for_assembly.out.release_merged_deprecated_chunk.collect())
 
     vcf_channel = channel.of().concat(merge_active_chunks.out.release_active_merged, merge_merged_chunks.out.release_merged_merged)
     // copy the files with the updated sequence to the output directory
     update_sequence_names_to_ena(vcf_channel)
-
-
 
     // Validate VCF files
     vcf_validator_release_vcf_files(vcf_channel)
