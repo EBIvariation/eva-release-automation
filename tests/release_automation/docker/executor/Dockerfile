@@ -3,7 +3,7 @@ FROM ubuntu:22.04
 ENV JAVA_VERSION=8
 ENV NXF_VER=21.10.5
 ENV VCF_VALIDATOR_VERSION=0.9.4
-ENV CONTIG_NAME_CONVERTER_VERSION=v0.0.2
+ENV CONTIG_NAME_CONVERTER_VERSION=0.0.2
 
 # install utility libs, python and java
 RUN apt update
@@ -33,8 +33,7 @@ RUN curl -LJo /usr/local/bin/vcf_assembly_checker https://github.com/EBIvariatio
     && chmod 755 /usr/local/bin/vcf_assembly_checker
 
 # Install contig_name_converter
-#RUN pip install -q "git+https://github.com/EBIvariation/contig_name_converter.git@${CONTIG_NAME_CONVERTER_VERSION}"
-RUN pip install -q "git+https://github.com/tcezard/contig_name_converter.git@EVA3793-allow-accession-as-id"
+RUN pip install -q "git+https://github.com/EBIvariation/contig_name_converter.git@${CONTIG_NAME_CONVERTER_VERSION}"
 
 COPY tests/release_automation/docker/executor/maven.xml /root
 COPY tests/release_automation/docker/executor/release_config.yml /root/.release_config.yml
