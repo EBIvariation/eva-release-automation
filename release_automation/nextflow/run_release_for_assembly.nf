@@ -39,12 +39,11 @@ workflow {
     assembly_check_release_vcf_files(vcf_channel)
     analyze_vcf_validator_results(vcf_validator_release_vcf_files.out.vcf_validator_results)
     analyze_assembly_checker_results(assembly_check_release_vcf_files.out.assembly_check_report)
-    validate_rs_release_files(merge_active_chunks.out.release_active_merged, merge_merged_chunks.out.release_merged_merged, merge_deprecated_chunks.out.release_merged_deprecated)
 
     count_rs_ids_in_release_vcf(update_sequence_names_to_ena.out.release_vcf_output_file)
     count_rs_ids_in_release_txt(merge_deprecated_chunks.out.release_merged_deprecated)
     merge_count_files(count_rs_ids_in_release_vcf.out.count_vcf.collect(), count_rs_ids_in_release_txt.out.count_txt)
-    update_release_status_for_assembly(merge_count_files.out.readme_count, validate_rs_release_files.out.flag)
+    update_release_status_for_assembly(merge_count_files.out.readme_count)
 }
 
 
@@ -559,30 +558,7 @@ process merge_count_files {
 
 
 }
-process validate_rs_release_files {
 
-    label 'long_time', 'med_mem'
-
-    publishDir path: output_log, pattern: '*.log', mode: 'copy', overwrite: true
-
-    input:
-    path active_rs_ids_file
-    path merged_rs_ids_file
-    path deprecated_rs_ids_file
-
-    output:
-    val true, emit: flag
-
-    script:
-    log_file = "validate_rs_release_files_${params.taxonomy}_${params.assembly}_${task.index}.log"
-    """
-    $params.executable.python_interpreter -m release_automation.validate_rs_release_files \
-    --active_rs_ids_file $active_rs_ids_file --merged_rs_ids_file $merged_rs_ids_file \
-    --deprecated_rs_ids_file $deprecated_rs_ids_file --private_config_xml_file $params.maven.settings_file \
-    --profile $params.maven.environment --taxonomy_id $params.taxonomy --assembly_accession $params.assembly \
-    --output_directory . 1>> $log_file 2>&1
-    """
-}
 
 process update_sequence_names_to_ena {
 
@@ -618,7 +594,6 @@ process update_release_status_for_assembly {
 
     input:
     path readme_count
-    val validate_rs_release_files_flag
 
     output:
     val true, emit: flag
