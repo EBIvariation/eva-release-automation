@@ -461,7 +461,7 @@ process analyze_vcf_validator_results {
 
     script:
     """
-    echo "Error: Duplicated variant" > allowed_errors.txt
+    echo "Duplicated variant" > allowed_errors.txt
     echo "Warning: Reference and alternate alleles " >> allowed_errors.txt
     echo "do not share the first nucleotide" >> allowed_errors.txt
     echo "the input file is not valid" >> allowed_errors.txt
@@ -491,8 +491,8 @@ process analyze_assembly_checker_results {
     script:
     """
     echo "not present in FASTA file"> allowed_errors.txt
-    echo  "does not match the reference sequence" >> allowed_errors.txt
-    echo  "Multiple synonyms  found for contig" >> allowed_errors.txt
+    echo "does not match the reference sequence" >> allowed_errors.txt
+    echo "Multiple synonyms  found for contig" >> allowed_errors.txt
 
     NB_ERROR=\$(cat $assembly_checker_log | grep -vFf allowed_errors.txt | wc -l)
     if [ ! "\$NB_ERROR" -eq "0" ]; then
