@@ -179,7 +179,7 @@ process merge_active_chunks {
     active_vcf = "${params.taxonomy}_${params.assembly}_current_ids.before_rename.vcf.gz"
     log_file = "merge_active_rs_${params.taxonomy}_${params.assembly}_${task.index}.log"
     """
-    $params.executable.bcftools concat -a -o $active_vcf -O z $release_active_chunks 1>> $log_file 2>&1
+    $params.executable.bcftools concat --no-version -a -o $active_vcf -O z $release_active_chunks 1>> $log_file 2>&1
     """
 }
 
@@ -301,7 +301,7 @@ process merge_merged_chunks {
     merged_vcf = "${params.taxonomy}_${params.assembly}_merged_ids.before_rename.vcf.gz"
 
     """
-    $params.executable.bcftools concat -a -o $merged_vcf -O z $release_merged_chunks 1>> $log_file 2>&1
+    $params.executable.bcftools concat --no-version -a -o $merged_vcf -O z $release_merged_chunks 1>> $log_file 2>&1
     """
 }
 

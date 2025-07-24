@@ -63,7 +63,7 @@ class TestRunReleaseForSpecies(TestCase):
         output = run_command_with_output('list all pending', command, True)
         assert expected_output == output
         command = 'docker exec executor python3 -m release_automation.run_release_for_species --taxonomy_id 4530 --assembly_accessions GCA_000005425.2 --release_version 1'
-        output = run_command_with_output('list all pending', command, True)
+        output = run_command_with_output('Run release for species', command, True)
         # Check that the run has completed and that log files are present
         for expected_file in expected_files:
             assert os.path.isfile(expected_file)
