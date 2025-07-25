@@ -113,6 +113,7 @@ process split_release_active_for_assembly {
 }
 
 process release_active_rs_for_assembly {
+    maxForks 50
 
     label 'med_time', 'med_mem'
 
@@ -233,6 +234,7 @@ process split_release_merged_for_assembly {
 }
 
 process release_merged_rs_for_assembly {
+    maxForks 50
 
     label 'med_time', 'med_mem'
 
@@ -358,6 +360,7 @@ process split_release_deprecated_for_assembly {
 
 
 process release_deprecated_rs_for_assembly {
+    maxForks 50
 
     label 'med_time', 'med_mem'
 
