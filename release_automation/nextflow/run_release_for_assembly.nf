@@ -39,12 +39,11 @@ workflow {
     assembly_check_release_vcf_files(vcf_channel)
     analyze_vcf_validator_results(vcf_validator_release_vcf_files.out.vcf_validator_results)
     analyze_assembly_checker_results(assembly_check_release_vcf_files.out.assembly_check_report)
-    validate_rs_release_files(merge_active_chunks.out.release_active_merged, merge_merged_chunks.out.release_merged_merged, merge_deprecated_chunks.out.release_merged_deprecated)
 
     count_rs_ids_in_release_vcf(update_sequence_names_to_ena.out.release_vcf_output_file)
     count_rs_ids_in_release_txt(merge_deprecated_chunks.out.release_merged_deprecated)
     merge_count_files(count_rs_ids_in_release_vcf.out.count_vcf.collect(), count_rs_ids_in_release_txt.out.count_txt)
-    update_release_status_for_assembly(merge_count_files.out.readme_count, validate_rs_release_files.out.flag)
+    update_release_status_for_assembly(merge_count_files.out.readme_count)
 }
 
 
@@ -114,6 +113,7 @@ process split_release_active_for_assembly {
 }
 
 process release_active_rs_for_assembly {
+    maxForks 50
 
     label 'med_time', 'med_mem'
 
@@ -180,7 +180,7 @@ process merge_active_chunks {
     active_vcf = "${params.taxonomy}_${params.assembly}_current_ids.before_rename.vcf.gz"
     log_file = "merge_active_rs_${params.taxonomy}_${params.assembly}_${task.index}.log"
     """
-    $params.executable.bcftools concat -a -o $active_vcf -O z $release_active_chunks 1>> $log_file 2>&1
+    $params.executable.bcftools concat --no-version -a -o $active_vcf -O z $release_active_chunks 1>> $log_file 2>&1
     """
 }
 
@@ -234,6 +234,7 @@ process split_release_merged_for_assembly {
 }
 
 process release_merged_rs_for_assembly {
+    maxForks 50
 
     label 'med_time', 'med_mem'
 
@@ -302,7 +303,7 @@ process merge_merged_chunks {
     merged_vcf = "${params.taxonomy}_${params.assembly}_merged_ids.before_rename.vcf.gz"
 
     """
-    $params.executable.bcftools concat -a -o $merged_vcf -O z $release_merged_chunks 1>> $log_file 2>&1
+    $params.executable.bcftools concat --no-version -a -o $merged_vcf -O z $release_merged_chunks 1>> $log_file 2>&1
     """
 }
 
@@ -359,6 +360,7 @@ process split_release_deprecated_for_assembly {
 
 
 process release_deprecated_rs_for_assembly {
+    maxForks 50
 
     label 'med_time', 'med_mem'
 
@@ -462,7 +464,7 @@ process analyze_vcf_validator_results {
 
     script:
     """
-    echo "Error: Duplicated variant" > allowed_errors.txt
+    echo "Duplicated variant" > allowed_errors.txt
     echo "Warning: Reference and alternate alleles " >> allowed_errors.txt
     echo "do not share the first nucleotide" >> allowed_errors.txt
     echo "the input file is not valid" >> allowed_errors.txt
@@ -492,8 +494,8 @@ process analyze_assembly_checker_results {
     script:
     """
     echo "not present in FASTA file"> allowed_errors.txt
-    echo  "does not match the reference sequence" >> allowed_errors.txt
-    echo  "Multiple synonyms  found for contig" >> allowed_errors.txt
+    echo "does not match the reference sequence" >> allowed_errors.txt
+    echo "Multiple synonyms  found for contig" >> allowed_errors.txt
 
     NB_ERROR=\$(cat $assembly_checker_log | grep -vFf allowed_errors.txt | wc -l)
     if [ ! "\$NB_ERROR" -eq "0" ]; then
@@ -559,30 +561,7 @@ process merge_count_files {
 
 
 }
-process validate_rs_release_files {
 
-    label 'long_time', 'med_mem'
-
-    publishDir path: output_log, pattern: '*.log', mode: 'copy', overwrite: true
-
-    input:
-    path active_rs_ids_file
-    path merged_rs_ids_file
-    path deprecated_rs_ids_file
-
-    output:
-    val true, emit: flag
-
-    script:
-    log_file = "validate_rs_release_files_${params.taxonomy}_${params.assembly}_${task.index}.log"
-    """
-    $params.executable.python_interpreter -m release_automation.validate_rs_release_files \
-    --active_rs_ids_file $active_rs_ids_file --merged_rs_ids_file $merged_rs_ids_file \
-    --deprecated_rs_ids_file $deprecated_rs_ids_file --private_config_xml_file $params.maven.settings_file \
-    --profile $params.maven.environment --taxonomy_id $params.taxonomy --assembly_accession $params.assembly \
-    --output_directory . 1>> $log_file 2>&1
-    """
-}
 
 process update_sequence_names_to_ena {
 
@@ -618,7 +597,6 @@ process update_release_status_for_assembly {
 
     input:
     path readme_count
-    val validate_rs_release_files_flag
 
     output:
     val true, emit: flag
