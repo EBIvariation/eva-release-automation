@@ -19,11 +19,6 @@ RUN curl -L "https://github.com/nextflow-io/nextflow/releases/download/v${NXF_VE
 RUN mkdir /usr/local/software/
 RUN mkdir -p /usr/local/test_eva_release/
 
-# Download release pipeline
-RUN curl -O -J https://dl.cloudsmith.io/public/ebivariation/packages/maven/uk/ac/ebi/eva/eva-accession-release/0.6.47-SNAPSHOT/eva-accession-release-0.6.47-20250422.150441-1-exec.jar
-RUN cp eva-accession-release-*exec.jar /usr/local/software/eva-accession-release.jar
-
-
 # install vcf_validator
 RUN curl -LJo /usr/local/bin/vcf_validator https://github.com/EBIvariation/vcf-validator/releases/download/v${VCF_VALIDATOR_VERSION}/vcf_validator_linux \
     && chmod 755 /usr/local/bin/vcf_validator
@@ -38,6 +33,15 @@ RUN pip install -q "git+https://github.com/EBIvariation/contig_name_converter.gi
 COPY tests/release_automation/docker/executor/maven.xml /root
 COPY tests/release_automation/docker/executor/release_config.yml /root/.release_config.yml
 COPY tests/release_automation/docker/executor/nextflow.config /root/.nextflow/config
+
+# Setup release pipeline
+WORKDIR /usr/local/software
+# TODO: change to Ebivariation-master once the eva-accesion-release PR is merged
+# RUN git clone -b master https://github.com/EBIvariation/eva-accession.git
+RUN git clone -b merge-deprecated-merged-jobs https://github.com/nitin-ebi/eva-accession.git
+RUN mvn package -s /root/maven.xml -f eva-accession/pom.xml -DskipTests -P localhost
+RUN cp eva-accession/eva-accession-release/target/eva-accession-release-*-exec.jar /usr/local/software/eva-accession-release.jar
+
 COPY . /opt/
 
 RUN cd /opt/ && python3 -m pip install .
