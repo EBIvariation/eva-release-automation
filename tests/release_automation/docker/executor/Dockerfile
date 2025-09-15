@@ -36,9 +36,7 @@ COPY tests/release_automation/docker/executor/nextflow.config /root/.nextflow/co
 
 # Setup release pipeline
 WORKDIR /usr/local/software
-# TODO: change to Ebivariation-master once the eva-accesion-release PR is merged
-# RUN git clone -b master https://github.com/EBIvariation/eva-accession.git
-RUN git clone -b merge-deprecated-merged-jobs https://github.com/nitin-ebi/eva-accession.git
+RUN git clone -b master https://github.com/EBIvariation/eva-accession.git
 RUN mvn package -s /root/maven.xml -f eva-accession/pom.xml -DskipTests -P localhost
 RUN cp eva-accession/eva-accession-release/target/eva-accession-release-*-exec.jar /usr/local/software/eva-accession-release.jar
 

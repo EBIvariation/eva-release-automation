@@ -222,7 +222,7 @@ process split_release_merged_and_deprecated_for_assembly {
     """
     if [ -s release_merged_and_deprecated_dump ]
     then
-      split -a 5 -d -l ${chunk_size} release_merged_and_deprecated_dump merged-and-deprecated-rs-chunk- 1>> $log_file 2>&1
+      sort -u release_merged_and_deprecated_dump | split -a 5 -d -l ${chunk_size} - merged-and-deprecated-rs-chunk- 1>> $log_file 2>&1
     else
       touch merged-and-deprecated-rs-chunk-0 > $log_file
     fi
