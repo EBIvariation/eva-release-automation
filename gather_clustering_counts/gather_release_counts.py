@@ -259,9 +259,10 @@ class ReleaseCounter(AppLogger):
                     rs_category = result.RSCountCategory
                     # Check if we were just loading the same value as a previous run
                     if rs_category.rs_count.count != count_dict['count']:
-                        self.error(f"{self.count_descriptor(count_dict)} already has a count entry in the table "
+                        self.warning(f"{self.count_descriptor(count_dict)} already has a count entry in the table "
                                    f"({rs_category.rs_count.count}) different from the one being loaded "
                                    f"{count_dict['count']}")
+                        rs_category.rs_count.count = count_dict['count']
 
     def _write_per_taxonomy_counts(self, session):
         """Load the aggregated count per taxonomy (assume previous version of the release was loaded already)"""
