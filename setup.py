@@ -7,7 +7,7 @@ requirements_txt = join(base_dir, 'requirements.txt')
 requirements = [l.strip() for l in open(requirements_txt) if l and not l.startswith('#')]
 
 setup(name='eva_release_automation',
-      version='0.0.1',
+      version='0.1.0',
       packages=find_packages(),
       package_data={'run_release_in_embassy': ['nextflow/*'], 'release_automation': ['nextflow/*']},
       install_requires=requirements,
