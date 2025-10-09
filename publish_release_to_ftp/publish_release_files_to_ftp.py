@@ -61,6 +61,20 @@ class ReleaseProperties:
                                                                f"release_{self.release_version - 1}")
 
 
+def get_list_of_taxonomy_to_release(release_properties, metadata_connection_handle):
+    """
+    Get list of taxonomy to release from metadata
+    """
+
+    query = ("select distinct taxonomy "
+             f"from {release_properties.release_species_inventory_table} "
+             f"where release_version = {release_properties.release_version}")
+    results = get_all_results_for_query(metadata_connection_handle, query)
+    for res in results:
+        yield res[0]
+
+
+
 def get_current_release_folder_for_taxonomy(taxonomy_id, release_properties, metadata_connection_handle):
     """
     Get info on current and previous release assemblies for the given taxonomy
@@ -341,17 +355,28 @@ def publish_release_files_to_ftp(release_version, taxonomy_id):
         create_assembly_name_symlinks(get_folder_path_for_species(release_properties.public_ftp_current_release_folder,
                                                                   species_current_release_folder_name))
 
+def publish_all_release_files_to_ftp(release_version):
+    release_properties = ReleaseProperties(release_version)
+    with get_metadata_connection_handle(
+            release_properties.profile, release_properties.private_config_xml_file) as metadata_connection_handle:
+        taxonomy_to_publish = get_list_of_taxonomy_to_release(release_properties, metadata_connection_handle)
+        logger.info(f'Publish release {release_version} for taxonomy {taxonomy_to_publish}')
+        publish_release_files_to_ftp(release_version, taxonomy_to_publish)
+
 
 def main():
     argparse = ArgumentParser(description='Publish release files to FTP')
     argparse.add_argument("--release_version", type=int, required=True)
-    argparse.add_argument('--taxonomy_id', required=True, type=int, help='ex: 9913')
+    argparse.add_argument('--taxonomy_id', required=False, type=int,
+                          help='The specific taxonomy to publish. If missing all taxonomy will be published')
 
     args = argparse.parse_args()
     load_config()
     logging_config.add_stdout_handler()
-
-    publish_release_files_to_ftp(args.release_version, args.taxonomy_id)
+    if args.taxonomy_id:
+        publish_release_files_to_ftp(args.release_version, args.taxonomy_id)
+    else:
+        publish_all_release_files_to_ftp(args.release_version)
 
 
 if __name__ == "__main__":

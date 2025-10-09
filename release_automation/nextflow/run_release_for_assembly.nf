@@ -489,7 +489,7 @@ process update_sequence_names_to_ena {
 
     publishDir path: output_log, pattern: '*.log', mode: 'copy', overwrite: true
     publishDir path: params.output_dir, pattern: '*.vcf.gz', mode: 'copy', overwrite: true
-
+    publishDir path: params.output_dir, pattern: '*.vcf.gz.csi', mode: 'copy', overwrite: true
 
     input:
     path release_vcf_file
