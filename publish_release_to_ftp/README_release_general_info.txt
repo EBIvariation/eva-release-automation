@@ -1,4 +1,4 @@
-EVA RefSNP release 6
+EVA RefSNP release 7
 
 Feedback
 ==================================
@@ -140,11 +140,5 @@ deprecated due to the following reason(s):
 
 - Other factors that prevent us from describing the variants with certainty
 
-
-Merged then deprecated RS IDs - ex: GCA_000002305.1_merged_deprecated_ids.txt.gz
------------------------------------------------------------------
-
-Contains RS IDs that should NOT be used because they have been merged into an
-RS ID that was deprecated later on. The deprecated RS ID is listed in the
-second column.
+- They were merged into another variant that later got deprecated
 
