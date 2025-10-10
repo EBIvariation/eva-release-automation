@@ -9,7 +9,10 @@ requirements = [l.strip() for l in open(requirements_txt) if l and not l.startsw
 setup(name='eva_release_automation',
       version='0.1.2.dev0',
       packages=find_packages(),
-      package_data={'run_release_in_embassy': ['nextflow/*'], 'release_automation': ['nextflow/*']},
+      package_data={
+          'run_release_in_embassy': ['nextflow/*'],
+          'release_automation': ['nextflow/*'],
+          'gather_clustering_counts': ['bash/*'] },
       install_requires=requirements,
       license='Apache',
       description='EBI EVA - RS Release processing tools',

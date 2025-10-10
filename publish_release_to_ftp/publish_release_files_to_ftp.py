@@ -359,9 +359,10 @@ def publish_all_release_files_to_ftp(release_version):
     release_properties = ReleaseProperties(release_version)
     with get_metadata_connection_handle(
             release_properties.profile, release_properties.private_config_xml_file) as metadata_connection_handle:
-        taxonomy_to_publish = get_list_of_taxonomy_to_release(release_properties, metadata_connection_handle)
-        logger.info(f'Publish release {release_version} for taxonomy {taxonomy_to_publish}')
-        publish_release_files_to_ftp(release_version, taxonomy_to_publish)
+        taxonomies_to_publish = get_list_of_taxonomy_to_release(release_properties, metadata_connection_handle)
+        for taxonomy in taxonomies_to_publish:
+            logger.info(f'Publish release {release_version} for taxonomy {taxonomy}')
+            publish_release_files_to_ftp(release_version, taxonomy)
 
 
 def main():
