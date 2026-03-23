@@ -27,9 +27,9 @@ from ebi_eva_internal_pyutils.metadata_utils import get_metadata_connection_hand
 from ebi_eva_internal_pyutils.pg_utils import get_all_results_for_query
 
 from publish_release_to_ftp.create_assembly_name_symlinks import create_assembly_name_symlinks
-from run_release_in_embassy.release_common_utils import get_release_folder_name
-from run_release_in_embassy.release_metadata import release_vcf_file_categories, release_text_file_categories
-from run_release_in_embassy.run_release_for_species import load_config, get_release_folder
+from release_automation.release_config import load_config
+from release_automation.release_utils import get_release_folder_name
+from release_automation.run_release_for_species import get_release_folder
 
 by_assembly_folder_name = "by_assembly"
 by_species_folder_name = "by_species"
@@ -42,7 +42,8 @@ release_top_level_files_to_copy = (readme_known_issues_file, readme_general_info
 script_dir = os.path.dirname(__file__)
 unmapped_ids_file_regex = "*_unmapped_ids.txt.gz"
 logger = logging_config.get_logger(__name__)
-
+release_vcf_file_categories = ["current_ids", "merged_ids"]
+release_text_file_categories = ["deprecated_ids"]
 
 class ReleaseProperties:
     def __init__(self, release_version):
@@ -61,11 +62,14 @@ class ReleaseProperties:
                                                                f"release_{self.release_version - 1}")
 
 
+def copy_or_link_file(src, dest, copy_command):
+    run_command_with_output(f"Copying file {src} to {dest}...", f"{copy_command} {src} {dest}")
+
+
 def get_list_of_taxonomy_to_release(release_properties, metadata_connection_handle):
     """
     Get list of taxonomy to release from metadata
     """
-
     query = ("select distinct taxonomy "
              f"from {release_properties.release_species_inventory_table} "
              f"where release_version = {release_properties.release_version}")
@@ -105,7 +109,7 @@ def get_release_assemblies_info_for_taxonomy(taxonomy_id, release_properties, me
                                         {release_properties.release_version} - 1)) row""")
 
     if len(results) == 0:
-        raise Exception("Could not find assemblies pertaining to taxonomy ID: " + taxonomy_id)
+        raise Exception("Could not find assemblies pertaining to taxonomy ID: " + str(taxonomy_id))
     return [result[0] for result in results]
 
 
@@ -190,6 +194,33 @@ def create_public_release_assembly_folder_if_not_exists(assembly_accession, publ
         run_command_with_output(f"Creating release folder for {assembly_accession}...",
                                 f"mkdir -p {public_release_assembly_folder}")
 
+def recreate_public_release_assembly_folder(assembly_accession, public_release_assembly_folder):
+    run_command_with_output("Removing release folder if it exists for {0}...".format(assembly_accession),
+                            "rm -rf " + public_release_assembly_folder)
+    run_command_with_output("Creating release folder for {0}...".format(assembly_accession),
+                            "mkdir -p " + public_release_assembly_folder)
+
+def hardlink_to_previous_release_assembly_files_in_ftp(current_release_assembly_info, release_properties):
+    assembly_accession = current_release_assembly_info["assembly_accession"]
+    public_current_release_assembly_folder = \
+        get_folder_path_for_assembly(release_properties.public_ftp_current_release_folder, assembly_accession)
+    public_previous_release_assembly_folder = \
+        get_folder_path_for_assembly(release_properties.public_ftp_previous_release_folder, assembly_accession)
+
+    if os.path.exists(public_previous_release_assembly_folder):
+        recreate_public_release_assembly_folder(assembly_accession, public_current_release_assembly_folder)
+        for filename in get_release_file_list_for_assembly(current_release_assembly_info) + ["md5checksums.txt"]:
+            file_to_hardlink = "{0}/{1}".format(public_previous_release_assembly_folder, filename)
+            if os.path.exists(file_to_hardlink):
+                run_command_with_output("Creating hardlink from previous release assembly folder {0} "
+                                        "to current release assembly folder {1}"
+                                        .format(public_current_release_assembly_folder,
+                                                public_previous_release_assembly_folder)
+                                        , 'ln -f {0} {1}'.format(file_to_hardlink,
+                                                                 public_current_release_assembly_folder))
+    else:
+        raise Exception("Previous release folder {0} does not exist for assembly!"
+                        .format(public_previous_release_assembly_folder))
 
 def publish_assembly_release_files_to_ftp(current_release_assembly_info, release_properties,
                                           public_release_assembly_folder, species_current_release_folder_name):
@@ -216,6 +247,8 @@ def publish_assembly_release_files_to_ftp(current_release_assembly_info, release
                 readme_known_issues_file
             )
         )
+    else:
+        hardlink_to_previous_release_assembly_files_in_ftp(current_release_assembly_info, release_properties)
 
     if current_release_assembly_info["num_rs_to_release"] > 0:
         # Create a link from assembly folder to species_folder ex: by_assembly/GCA_000005005.5/zea_mays to by_species/zea_mays/GCA_000005005.5
@@ -228,16 +261,13 @@ def get_release_assemblies_for_release_version(assemblies_to_process, release_ve
 
 
 def copy_unmapped_files(source_folder_to_copy_from, species_current_release_folder_path, copy_from_current_release):
-    def copy_file(src, dest, copy_command):
-        run_command_with_output(f"Copying file {src} to {dest}...", f"{copy_command} {src} {dest}")
-
     species_level_files_to_copy = (unmapped_ids_file_regex, "md5checksums.txt", "README_unmapped_rs_ids_count.txt")
 
     # Copy files from current release folder
     if copy_from_current_release:
         for filename in species_level_files_to_copy:
             absolute_file_path = os.path.join(source_folder_to_copy_from, filename)
-            copy_file(absolute_file_path, species_current_release_folder_path, "cp")
+            copy_or_link_file(absolute_file_path, species_current_release_folder_path, "cp")
     else:
         unmapped_variants_files = glob.glob(f"{source_folder_to_copy_from}/{unmapped_ids_file_regex}")
         assert len(unmapped_variants_files) <= 1, \
@@ -249,7 +279,7 @@ def copy_unmapped_files(source_folder_to_copy_from, species_current_release_fold
         unmapped_variants_file_path_current_release = \
             os.path.join(species_current_release_folder_path,
                          unmapped_ids_file_regex.replace("*", os.path.basename(species_current_release_folder_path)))
-        copy_file(unmapped_variants_files[0], unmapped_variants_file_path_current_release, "ln -f")
+        copy_or_link_file(unmapped_variants_files[0], unmapped_variants_file_path_current_release, "ln -f")
         # Compute MD5 checksum file
         run_command_with_output("Compute MD5 checksum",
                                 "(md5sum {0} | awk '{{print $1}}' | xargs -i echo -e '{{}}\t{1}') > {2}"
