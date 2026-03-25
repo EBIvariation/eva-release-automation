@@ -43,14 +43,14 @@ class TestReleaseTracker(TestCase):
         mock_ncbi.return_value.assembly_fasta_path = '/ref/GCA_000005425.2.fa'
         mock_ncbi.return_value.assembly_report_path = '/ref/GCA_000005425.2_report.txt'
 
-        self.tracker._insert_entry_for_taxonomy_and_assembly(4530, 'GCA_000005425.2', 'EVA')
+        self.tracker._insert_entry_for_taxonomy_and_assembly(4530, 'GCA_000005425.2')
 
         mock_execute.assert_called_once()
         query = mock_execute.call_args[0][1]
         expected_query = """INSERT INTO eva_progress_tracker.clustering_release_tracker(
         taxonomy, scientific_name, assembly_accession, release_version, sources,
         fasta_path, report_path, tempmongo_instance, release_folder_name) 
-        VALUES (4530, 'Oryza sativa', 'GCA_000005425.2', 2, 'EVA', 
+        VALUES (4530, 'Oryza sativa', 'GCA_000005425.2', 2, 'EVA, DBSNP', 
         '/ref/GCA_000005425.2.fa', '/ref/GCA_000005425.2_report.txt', 'dummy', 'oryza_sativa') 
         ON CONFLICT DO NOTHING"""
         assert_no_multispace(query, expected_query)
@@ -61,14 +61,14 @@ class TestReleaseTracker(TestCase):
     def test_fill_from_previous_release(self, mock_get_all, mock_execute):
         # First call: previous-release query; second call: source-check inside _insert_entry
         mock_get_all.side_effect = [
-            [(4530, 'Oryza sativa', 'GCA_000005425.2', 'EVA', '/p/fasta', '/p/report', 'oryza_sativa')],
+            [(4530, 'Oryza sativa', 'GCA_000005425.2', '/p/fasta', '/p/report', 'oryza_sativa')],
             [],  # entry not yet in current release
         ]
 
         self.tracker._fill_from_previous_release()
         assert mock_get_all.call_count == 2
         query = mock_get_all.call_args_list[0][0][1]
-        expected_query = """select taxonomy, scientific_name, assembly_accession, sources, fasta_path, report_path,
+        expected_query = """select taxonomy, scientific_name, assembly_accession, fasta_path, report_path,
                     release_folder_name from eva_progress_tracker.clustering_release_tracker
                     where release_version = 1"""
         assert_no_multispace(query, expected_query)
@@ -82,7 +82,7 @@ class TestReleaseTracker(TestCase):
         expected_query = """INSERT INTO eva_progress_tracker.clustering_release_tracker(
         taxonomy, scientific_name, assembly_accession, release_version, sources,
         fasta_path, report_path, tempmongo_instance, release_folder_name) 
-        VALUES (4530, 'Oryza sativa', 'GCA_000005425.2', 2, 'EVA', 
+        VALUES (4530, 'Oryza sativa', 'GCA_000005425.2', 2, 'EVA, DBSNP', 
         '/p/fasta', '/p/report', 'dummy', 'oryza_sativa') 
         ON CONFLICT DO NOTHING"""
         assert_no_multispace(query, expected_query)
@@ -114,7 +114,7 @@ class TestReleaseTracker(TestCase):
         expected_insert = """INSERT INTO eva_progress_tracker.clustering_release_tracker(
                             taxonomy, scientific_name, assembly_accession, release_version, sources,
                             fasta_path, report_path, tempmongo_instance, release_folder_name)
-                            VALUES (4530, 'Oryza sativa', 'GCA_000005425.2', 2, 'EVA',
+                            VALUES (4530, 'Oryza sativa', 'GCA_000005425.2', 2, 'EVA, DBSNP',
                             '/ref/fasta', '/ref/report', 'dummy', 'oryza_sativa')
                             ON CONFLICT DO NOTHING"""
         assert_no_multispace(insert_query, expected_insert)
@@ -142,7 +142,7 @@ class TestReleaseTracker(TestCase):
         expected_insert = """INSERT INTO eva_progress_tracker.clustering_release_tracker(
                             taxonomy, scientific_name, assembly_accession, release_version, sources,
                             fasta_path, report_path, tempmongo_instance, release_folder_name)
-                            VALUES (4530, 'Oryza sativa', 'GCA_000005425.2', 2, 'DBSNP, EVA',
+                            VALUES (4530, 'Oryza sativa', 'GCA_000005425.2', 2, 'EVA, DBSNP',
                             '/ref/fasta', '/ref/report', 'dummy', 'oryza_sativa')
                             ON CONFLICT DO NOTHING"""
         assert_no_multispace(insert_query, expected_insert)
@@ -371,12 +371,12 @@ class TestReleaseTrackerEndToEnd(TestCase):
 
         oryza = rows[4530]
         assert oryza[1] == 'GCA_000005425.2'
-        assert oryza[2] == 'DBSNP, EVA'
+        assert oryza[2] == 'EVA, DBSNP'
         assert oryza[3]  # should_be_released
 
         human = rows[9606]
         assert human[1] == 'GCA_000001405.15'
-        assert human[2] == 'DBSNP, EVA'
+        assert human[2] == 'EVA, DBSNP'
         assert human[3]  # should_be_released
 
     @patch('release_automation.create_release_tracking_table.NCBIAssembly')

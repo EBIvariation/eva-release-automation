@@ -79,8 +79,8 @@ class ReleaseTracker(AppLogger):
         self.fill_should_be_released_from_clustered_variant_update()
 
     def _fill_from_previous_release(self):
-        query = f"""select taxonomy, scientific_name, assembly_accession, fasta_path, report_path, 
-                    release_folder_name from eva_progress_tracker.clustering_release_tracker 
+        query = f"""select taxonomy, scientific_name, assembly_accession, fasta_path, report_path, release_folder_name 
+                    from eva_progress_tracker.clustering_release_tracker 
                     where release_version = {self.release_version - 1}"""
         for tax, sc_name, asm_acc, fs_path, rpt_path, rls_folder_name in get_all_results_for_query(
                 self.metadata_conn, query):
@@ -114,8 +114,11 @@ class ReleaseTracker(AppLogger):
             report_path = report_path if report_path else ncbi_assembly.assembly_report_path
         release_folder_name = release_folder_name if release_folder_name else normalise_taxon_scientific_name(sc_name)
 
+        # source is not used anymore so default to all source
         sources = 'EVA, DBSNP'
         tempmongo_instance = 'dummy'
+
+        # Still check for the presence of the row even if we don't care about the source
         src_in_db = self.get_sources_for_taxonomy_assembly(tax, asm_acc)
 
         if not src_in_db:
@@ -128,16 +131,7 @@ class ReleaseTracker(AppLogger):
                             ON CONFLICT DO NOTHING"""
             execute_query(self.metadata_conn, insert_query)
         else:
-            # if DB source is equal to what we are trying to insert or if the DB source already contains
-            # both EVA and DBSNP, no need to insert again
-            if src_in_db == sources or ('EVA' in src_in_db and 'DBSNP' in src_in_db):
-                self.info(f"Entry already present for taxonomy {tax} and assembly {asm_acc} with sources {sources}")
-            else:
-                # We have different sources which means we need to update entry to have both DBNSP and EVA in sources
-                update_query = f"""update eva_progress_tracker.clustering_release_tracker set sources='DBSNP, EVA'
-                                where taxonomy={tax} and assembly_accession='{asm_acc}' and  
-                                release_version={self.release_version}"""
-                execute_query(self.metadata_conn, update_query)
+            self.warning(f'Taxonomy {tax}, assembly {asm_acc} already present in database for version {self.release_version}. Skipping insertion.')
 
     def fill_should_be_released_from_clustered_variant_update(self):
         # Old date to include everything unless we find a previous release
