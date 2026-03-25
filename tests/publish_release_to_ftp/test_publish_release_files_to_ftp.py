@@ -15,6 +15,8 @@ from publish_release_to_ftp.publish_release_files_to_ftp import (
     get_release_file_list_for_assembly,
     hardlink_to_previous_release_assembly_files_in_ftp,
     publish_assembly_release_files_to_ftp,
+    publish_release_top_level_files_to_ftp,
+    release_top_level_files_to_copy,
 )
 
 TAXONOMY = 9606
@@ -79,6 +81,20 @@ class TestPublishReleaseFilesToFTP(TestCase):
             with open(os.path.join(staging, filename), 'w') as f:
                 f.write('New release')
         return staging
+
+    # ------------------------------------------------------------------
+    # publish_release_top_level_files_to_ftp
+    # ------------------------------------------------------------------
+
+    def test_publish_release_top_level_files_to_ftp(self):
+        dest_dir = self.release_properties.public_ftp_current_release_folder
+        os.makedirs(dest_dir)
+
+        publish_release_top_level_files_to_ftp(self.release_properties)
+
+        for filename in release_top_level_files_to_copy:
+            self.assertTrue(os.path.exists(os.path.join(dest_dir, filename)),
+                            f"Expected {filename} in FTP release folder")
 
     # ------------------------------------------------------------------
     # hardlink_to_previous_release_assembly_files_in_ftp
