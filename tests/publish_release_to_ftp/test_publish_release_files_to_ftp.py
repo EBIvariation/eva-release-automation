@@ -1,14 +1,14 @@
 import gzip
 import os
-import sys
 import tempfile
 from types import SimpleNamespace
-from unittest import TestCase, skipIf
+from unittest import TestCase
 from unittest.mock import patch
 
 from publish_release_to_ftp.publish_release_files_to_ftp import (
     copy_current_assembly_data_to_ftp,
-    copy_unmapped_files,
+    copy_current_unmapped_files,
+    hardlink_previous_unmapped_files,
     get_folder_path_for_assembly,
     get_folder_path_for_species,
     get_folder_path_for_species_assembly,
@@ -142,11 +142,10 @@ class TestWithMockedDb(TestCase):
                      os.path.join(source, 'README_unmapped_rs_ids_count.txt')]:
             open(path, 'w').close()
 
-        copy_unmapped_files(source, dest, copy_from_current_release=True)
+        copy_current_unmapped_files(source, dest)
 
         self.assertTrue(os.path.exists(os.path.join(dest, f'{TAXONOMY}_unmapped_ids.txt.gz')))
 
-    @skipIf(sys.platform == 'darwin', 'copy_unmapped_files uses xargs -i which is Linux-only (GNU coreutils)')
     def test_copy_unmapped_files_from_previous_release(self):
         prev_species = os.path.join(self.tmp, 'prev', SPECIES_FOLDER)
         curr_species = os.path.join(self.tmp, 'curr', SPECIES_FOLDER)
@@ -156,7 +155,7 @@ class TestWithMockedDb(TestCase):
         with gzip.open(unmapped_src, 'wt') as f:
             f.write('RS123\t1\n')
 
-        copy_unmapped_files(prev_species, curr_species, copy_from_current_release=False)
+        hardlink_previous_unmapped_files(prev_species, curr_species)
 
         expected_name = f'{SPECIES_FOLDER}_unmapped_ids.txt.gz'
         linked_file = os.path.join(curr_species, expected_name)
@@ -172,7 +171,7 @@ class TestWithMockedDb(TestCase):
         os.makedirs(source)
         os.makedirs(dest)
         with self.assertRaises(AssertionError):
-            copy_unmapped_files(source, dest, copy_from_current_release=False)
+            hardlink_previous_unmapped_files(source, dest)
 
     # ------------------------------------------------------------------
     # publish_assembly_release_files_to_ftp
