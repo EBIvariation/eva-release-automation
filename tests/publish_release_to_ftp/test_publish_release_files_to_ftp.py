@@ -12,7 +12,6 @@ from publish_release_to_ftp.publish_release_files_to_ftp import (
     get_folder_path_for_assembly,
     get_folder_path_for_species,
     get_folder_path_for_species_assembly,
-    get_release_assemblies_for_release_version,
     get_release_file_list_for_assembly,
     hardlink_to_previous_release_assembly_files_in_ftp,
     publish_assembly_release_files_to_ftp,
@@ -46,7 +45,7 @@ def make_release_properties(tmp_dir, release_version=RELEASE_VERSION):
     )
 
 
-class TestWithMockedDb(TestCase):
+class TestPublishReleaseFilesToFTP(TestCase):
 
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
@@ -68,7 +67,7 @@ class TestWithMockedDb(TestCase):
         os.makedirs(prev_folder, exist_ok=True)
         for filename in get_release_file_list_for_assembly(self.assembly_info) + ['md5checksums.txt']:
             with open(os.path.join(prev_folder, filename), 'w') as f:
-                f.write('dummy')
+                f.write('Previous release')
         return prev_folder
 
     def _create_staging_assembly_folder(self):
@@ -78,7 +77,7 @@ class TestWithMockedDb(TestCase):
         os.makedirs(staging, exist_ok=True)
         for filename in get_release_file_list_for_assembly(self.assembly_info):
             with open(os.path.join(staging, filename), 'w') as f:
-                f.write('test content')
+                f.write('New release')
         return staging
 
     # ------------------------------------------------------------------
@@ -127,10 +126,10 @@ class TestWithMockedDb(TestCase):
         self.assertGreater(os.path.getsize(md5file), 0)
 
     # ------------------------------------------------------------------
-    # copy_unmapped_files
+    # copy_current_unmapped_files
     # ------------------------------------------------------------------
 
-    def test_copy_unmapped_files_from_current_release(self):
+    def test_copy_current_unmapped_files(self):
         source = os.path.join(self.tmp, 'source_species')
         dest = os.path.join(self.tmp, 'dest_species')
         os.makedirs(source)
@@ -146,7 +145,7 @@ class TestWithMockedDb(TestCase):
 
         self.assertTrue(os.path.exists(os.path.join(dest, f'{TAXONOMY}_unmapped_ids.txt.gz')))
 
-    def test_copy_unmapped_files_from_previous_release(self):
+    def test_hardlink_previous_unmapped_files(self):
         prev_species = os.path.join(self.tmp, 'prev', SPECIES_FOLDER)
         curr_species = os.path.join(self.tmp, 'curr', SPECIES_FOLDER)
         os.makedirs(prev_species)
@@ -165,7 +164,7 @@ class TestWithMockedDb(TestCase):
         self.assertTrue(os.path.exists(os.path.join(curr_species, 'md5checksums.txt')))
         self.assertTrue(os.path.exists(os.path.join(curr_species, 'README_unmapped_rs_ids_count.txt')))
 
-    def test_copy_unmapped_files_raises_when_no_file(self):
+    def test_hardlink_previous_unmapped_files_no_file(self):
         source = os.path.join(self.tmp, 'empty_source')
         dest = os.path.join(self.tmp, 'dest')
         os.makedirs(source)
@@ -215,41 +214,13 @@ class TestWithMockedDb(TestCase):
                                f"{filename} should have nlink > 1 (hard link)")
 
 
-class TestPublishAssemblyEndToEnd(TestCase):
-
-    def setUp(self):
-        self._tmp = tempfile.TemporaryDirectory()
-        self.tmp = self._tmp.name
-        self.release_properties = make_release_properties(self.tmp)
-        self.assembly_info = make_assembly_info()
-
-    def tearDown(self):
-        self._tmp.cleanup()
-
-    def _create_staging_assembly_folder(self):
-        staging = os.path.join(
-            self.release_properties.staging_release_folder, SPECIES_FOLDER, ASSEMBLY_ACCESSION)
-        os.makedirs(staging, exist_ok=True)
-        for filename in get_release_file_list_for_assembly(self.assembly_info):
-            with open(os.path.join(staging, filename), 'w') as f:
-                f.write('test content')
-        return staging
-
-    def _create_previous_ftp_assembly_folder(self):
-        prev_folder = get_folder_path_for_assembly(
-            self.release_properties.public_ftp_previous_release_folder, ASSEMBLY_ACCESSION)
-        os.makedirs(prev_folder, exist_ok=True)
-        for filename in get_release_file_list_for_assembly(self.assembly_info) + ['md5checksums.txt']:
-            with open(os.path.join(prev_folder, filename), 'w') as f:
-                f.write('old content')
-        return prev_folder
 
     @patch('publish_release_to_ftp.publish_release_files_to_ftp.get_release_folder_name',
            return_value=SPECIES_FOLDER)
     @patch('publish_release_to_ftp.publish_release_files_to_ftp.create_assembly_name_symlinks')
     def test_full_publish_flow_released_assembly(self, _mock_symlinks, _mock_grf):
         self._create_staging_assembly_folder()
-        self._create_previous_ftp_assembly_folder()
+        self._create_previous_assembly_folder()
 
         current_release = self.release_properties.public_ftp_current_release_folder
         assembly_folder = get_folder_path_for_assembly(current_release, ASSEMBLY_ACCESSION)
@@ -278,7 +249,7 @@ class TestPublishAssemblyEndToEnd(TestCase):
 
     @patch('publish_release_to_ftp.publish_release_files_to_ftp.create_assembly_name_symlinks')
     def test_full_publish_flow_unchanged_assembly(self, _mock_symlinks):
-        prev_folder = self._create_previous_ftp_assembly_folder()
+        prev_folder = self._create_previous_assembly_folder()
         current_release = self.release_properties.public_ftp_current_release_folder
         assembly_folder = get_folder_path_for_assembly(current_release, ASSEMBLY_ACCESSION)
         assembly_info = make_assembly_info(should_be_released=False, num_rs_to_release=0)
