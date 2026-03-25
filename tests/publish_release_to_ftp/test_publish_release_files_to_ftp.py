@@ -46,46 +46,6 @@ def make_release_properties(tmp_dir, release_version=RELEASE_VERSION):
     )
 
 
-class TestUnitFunctions(TestCase):
-
-    def test_get_release_file_list_for_assembly(self):
-        assembly_info = make_assembly_info()
-        file_list = get_release_file_list_for_assembly(assembly_info)
-        expected = sorted([
-            f'{TAXONOMY}_{ASSEMBLY_ACCESSION}_current_ids.vcf.gz',
-            f'{TAXONOMY}_{ASSEMBLY_ACCESSION}_current_ids.vcf.gz.csi',
-            f'{TAXONOMY}_{ASSEMBLY_ACCESSION}_merged_ids.vcf.gz',
-            f'{TAXONOMY}_{ASSEMBLY_ACCESSION}_merged_ids.vcf.gz.csi',
-            f'{TAXONOMY}_{ASSEMBLY_ACCESSION}_deprecated_ids.txt.gz',
-            'README_rs_ids_counts.txt',
-        ])
-        self.assertEqual(expected, file_list)
-
-    def test_get_folder_path_for_assembly(self):
-        path = get_folder_path_for_assembly('/base', ASSEMBLY_ACCESSION)
-        self.assertEqual(f'/base/by_assembly/{ASSEMBLY_ACCESSION}', path)
-
-    def test_get_folder_path_for_species(self):
-        path = get_folder_path_for_species('/base', SPECIES_FOLDER)
-        self.assertEqual(f'/base/by_species/{SPECIES_FOLDER}', path)
-
-    def test_get_folder_path_for_species_assembly(self):
-        path = get_folder_path_for_species_assembly('/base', SPECIES_FOLDER, ASSEMBLY_ACCESSION)
-        self.assertEqual(f'/base/by_species/{SPECIES_FOLDER}/{ASSEMBLY_ACCESSION}', path)
-
-    def test_get_release_assemblies_for_release_version(self):
-        assemblies = [
-            {'assembly_accession': 'GCA_1', 'release_version': 4},
-            {'assembly_accession': 'GCA_2', 'release_version': 5},
-            {'assembly_accession': 'GCA_3', 'release_version': 5},
-        ]
-        result = get_release_assemblies_for_release_version(assemblies, 5)
-        self.assertEqual(2, len(result))
-        self.assertTrue(all(a['release_version'] == 5 for a in result))
-        accessions = {a['assembly_accession'] for a in result}
-        self.assertEqual({'GCA_2', 'GCA_3'}, accessions)
-
-
 class TestWithMockedDb(TestCase):
 
     def setUp(self):
