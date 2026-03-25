@@ -53,17 +53,17 @@ class ReleaseTracker(AppLogger):
             'scientific_name text not null, '
             'assembly_accession text not null, '
             'release_version int8 not null, '
-            'sources text not null,'
-            'clustering_status text null, '  # unused
-            'clustering_start timestamp null, '  # unused
-            'clustering_end timestamp null, '  # unused
+            'sources text not null,'              # unused
+            'clustering_status text null, '       # unused
+            'clustering_start timestamp null, '   # unused
+            'clustering_end timestamp null, '     # unused
             'should_be_clustered boolean null, '  # unused
             'fasta_path text null, '
             'report_path text null, '
-            'tempmongo_instance text null, '
+            'tempmongo_instance text null, '      # unused
             'should_be_released boolean null, '
-            'num_rs_to_release int8 null, '  # not computed but still used by release automation
-            'total_num_variants int8 null, '  # not computed and unused
+            'num_rs_to_release int8 null, '       # not computed but still used by release automation
+            'total_num_variants int8 null, '      # not computed and unused
             'release_folder_name text null, '
             'release_status text null, '
             'primary key (taxonomy, assembly_accession, release_version))'
@@ -79,12 +79,12 @@ class ReleaseTracker(AppLogger):
         self.fill_should_be_released_from_clustered_variant_update()
 
     def _fill_from_previous_release(self):
-        query = f"""select taxonomy, scientific_name, assembly_accession, sources, fasta_path, report_path, 
+        query = f"""select taxonomy, scientific_name, assembly_accession, fasta_path, report_path, 
                     release_folder_name from eva_progress_tracker.clustering_release_tracker 
                     where release_version = {self.release_version - 1}"""
-        for tax, sc_name, asm_acc, src, fs_path, rpt_path, rls_folder_name in get_all_results_for_query(
+        for tax, sc_name, asm_acc, fs_path, rpt_path, rls_folder_name in get_all_results_for_query(
                 self.metadata_conn, query):
-            self._insert_entry_for_taxonomy_and_assembly(tax, asm_acc, src, sc_name, fs_path, rpt_path,
+            self._insert_entry_for_taxonomy_and_assembly(tax, asm_acc, sc_name, fs_path, rpt_path,
                                                          rls_folder_name)
 
     def _fill_from_eva_metadata(self):
@@ -94,19 +94,17 @@ class ReleaseTracker(AppLogger):
                     join evapro.analysis a on a.analysis_accession = pa.analysis_accession 
                     join evapro.assembly asm on asm.assembly_set_id = a.assembly_set_id 
                     and asm.assembly_accession is not null and assembly_accession like 'GCA%'"""
-        sources = 'EVA'
         for tax, asm_acc in get_all_results_for_query(self.metadata_conn, query):
-            self._insert_entry_for_taxonomy_and_assembly(tax, asm_acc, sources)
+            self._insert_entry_for_taxonomy_and_assembly(tax, asm_acc)
 
     def _fill_from_supported_assembly_tracker(self):
         query = f"""select distinct taxonomy_id as taxonomy, assembly_id as assembly_accession
                     from evapro.supported_assembly_tracker"""
-        sources = 'DBSNP, EVA'
         for tax, asm_acc in get_all_results_for_query(self.metadata_conn, query):
-            self._insert_entry_for_taxonomy_and_assembly(tax, asm_acc, sources)
+            self._insert_entry_for_taxonomy_and_assembly(tax, asm_acc)
 
 
-    def _insert_entry_for_taxonomy_and_assembly(self, tax, asm_acc, sources, sc_name=None, fasta_path=None,
+    def _insert_entry_for_taxonomy_and_assembly(self, tax, asm_acc, sc_name=None, fasta_path=None,
                                                 report_path=None, release_folder_name=None):
         sc_name = sc_name if sc_name else get_scientific_name_from_ensembl(tax)
         sc_name = sc_name.replace("'", "\''")
@@ -116,6 +114,7 @@ class ReleaseTracker(AppLogger):
             report_path = report_path if report_path else ncbi_assembly.assembly_report_path
         release_folder_name = release_folder_name if release_folder_name else normalise_taxon_scientific_name(sc_name)
 
+        sources = 'EVA, DBSNP'
         tempmongo_instance = 'dummy'
         src_in_db = self.get_sources_for_taxonomy_assembly(tax, asm_acc)
 

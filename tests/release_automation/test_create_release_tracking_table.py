@@ -55,27 +55,10 @@ class TestReleaseTracker(TestCase):
         ON CONFLICT DO NOTHING"""
         assert_no_multispace(query, expected_query)
 
-    @patch('release_automation.create_release_tracking_table.execute_query')
-    @patch('release_automation.create_release_tracking_table.get_all_results_for_query', return_value=[('EVA',)])
-    @patch('release_automation.create_release_tracking_table.NCBIAssembly')
-    @patch('release_automation.create_release_tracking_table.get_scientific_name_from_ensembl', return_value='Oryza sativa')
-    def test_update_sources_when_new_source(self, mock_sci_name, mock_ncbi, mock_get_all, mock_execute):
-        """Existing EVA-only entry should be updated to DBSNP, EVA when the supported assembly tracker adds it."""
-        mock_ncbi.return_value.assembly_fasta_path = '/ref/GCA_000005425.2.fa'
-        mock_ncbi.return_value.assembly_report_path = '/ref/GCA_000005425.2_report.txt'
-
-        self.tracker._insert_entry_for_taxonomy_and_assembly(4530, 'GCA_000005425.2', 'DBSNP, EVA')
-
-        mock_execute.assert_called_once()
-        query = mock_execute.call_args[0][1]
-        expected_query = """update eva_progress_tracker.clustering_release_tracker set sources='DBSNP, EVA'
-        where taxonomy=4530 and assembly_accession='GCA_000005425.2' and release_version=2"""
-        assert_no_multispace(query, expected_query)
-
 
     @patch('release_automation.create_release_tracking_table.execute_query')
     @patch('release_automation.create_release_tracking_table.get_all_results_for_query')
-    def test_copies_rows_from_previous_release(self, mock_get_all, mock_execute):
+    def test_fill_from_previous_release(self, mock_get_all, mock_execute):
         # First call: previous-release query; second call: source-check inside _insert_entry
         mock_get_all.side_effect = [
             [(4530, 'Oryza sativa', 'GCA_000005425.2', 'EVA', '/p/fasta', '/p/report', 'oryza_sativa')],
@@ -108,7 +91,7 @@ class TestReleaseTracker(TestCase):
     @patch('release_automation.create_release_tracking_table.get_all_results_for_query')
     @patch('release_automation.create_release_tracking_table.NCBIAssembly')
     @patch('release_automation.create_release_tracking_table.get_scientific_name_from_ensembl', return_value='Oryza sativa')
-    def test_inserts_eva_entries(self, mock_sci_name, mock_ncbi, mock_get_all, mock_execute):
+    def test_fill_from_eva_metadata_inserts_eva_entries(self, mock_sci_name, mock_ncbi, mock_get_all, mock_execute):
         mock_ncbi.return_value.assembly_fasta_path = '/ref/fasta'
         mock_ncbi.return_value.assembly_report_path = '/ref/report'
         mock_get_all.side_effect = [
@@ -140,7 +123,7 @@ class TestReleaseTracker(TestCase):
     @patch('release_automation.create_release_tracking_table.get_all_results_for_query')
     @patch('release_automation.create_release_tracking_table.NCBIAssembly')
     @patch('release_automation.create_release_tracking_table.get_scientific_name_from_ensembl', return_value='Oryza sativa')
-    def test_inserts_dbsnp_eva_entries(self, mock_sci_name, mock_ncbi, mock_get_all, mock_execute):
+    def test_fill_from_supported_assembly_tracker(self, mock_sci_name, mock_ncbi, mock_get_all, mock_execute):
         mock_ncbi.return_value.assembly_fasta_path = '/ref/fasta'
         mock_ncbi.return_value.assembly_report_path = '/ref/report'
         mock_get_all.side_effect = [
@@ -166,7 +149,7 @@ class TestReleaseTracker(TestCase):
 
     @patch('release_automation.create_release_tracking_table.execute_query')
     @patch('release_automation.create_release_tracking_table.get_all_results_for_query')
-    def test_uses_epoch_date_when_no_previous_release(self, mock_get_all, mock_execute):
+    def test_fill_should_be_released_from_clustered_variant_update_when_no_previous_release(self, mock_get_all, mock_execute):
         """With no prior release record, use a far-past date to capture all clustered updates."""
         mock_get_all.side_effect = [
             [],  # no rows in eva_stats.release_rs
@@ -192,7 +175,7 @@ class TestReleaseTracker(TestCase):
 
     @patch('release_automation.create_release_tracking_table.execute_query')
     @patch('release_automation.create_release_tracking_table.get_all_results_for_query')
-    def test_uses_previous_release_date(self, mock_get_all, mock_execute):
+    def test_fill_should_be_released_from_clustered_variant_update_with_previous_release_available(self, mock_get_all, mock_execute):
         """Entries in clustered_variant_update after the previous release date should be marked."""
         mock_get_all.side_effect = [
             [(date(2024, 6, 15), 1)],  # previous release: version 1 on 2024-06-15
@@ -222,6 +205,7 @@ class TestReleaseTracker(TestCase):
                         set should_be_released=True, num_rs_to_release=1
                         where taxonomy=4530 and assembly_accession='GCA_000005425.2' and release_version=2"""
         assert_no_multispace(query, expected_update)
+
 
 class SQLiteCompatibleCursor:
     """Wraps sqlite3.Cursor to add the context manager protocol expected by psycopg2 code."""
