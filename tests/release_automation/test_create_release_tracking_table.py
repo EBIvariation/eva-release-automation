@@ -36,12 +36,14 @@ class TestReleaseTracker(TestCase):
         self.tracker = make_tracker(release_version = 2)
 
     @patch('release_automation.create_release_tracking_table.execute_query')
-    @patch('release_automation.create_release_tracking_table.get_all_results_for_query', return_value=[])
+    @patch('release_automation.create_release_tracking_table.get_all_results_for_query')
     @patch('release_automation.create_release_tracking_table.NCBIAssembly')
-    @patch('release_automation.create_release_tracking_table.get_scientific_name_from_ensembl', return_value='Oryza sativa')
+    @patch('release_automation.create_release_tracking_table.get_scientific_name_from_ensembl')
     def test_insert_new_entry(self, mock_sci_name, mock_ncbi, mock_get_all, mock_execute):
+        mock_sci_name.return_value = 'Oryza sativa'
         mock_ncbi.return_value.assembly_fasta_path = '/ref/GCA_000005425.2.fa'
         mock_ncbi.return_value.assembly_report_path = '/ref/GCA_000005425.2_report.txt'
+        mock_get_all.return_value = [] # source-check inside _insert_entry None present
 
         self.tracker._insert_entry_for_taxonomy_and_assembly(4530, 'GCA_000005425.2')
 
@@ -90,8 +92,9 @@ class TestReleaseTracker(TestCase):
     @patch('release_automation.create_release_tracking_table.execute_query')
     @patch('release_automation.create_release_tracking_table.get_all_results_for_query')
     @patch('release_automation.create_release_tracking_table.NCBIAssembly')
-    @patch('release_automation.create_release_tracking_table.get_scientific_name_from_ensembl', return_value='Oryza sativa')
+    @patch('release_automation.create_release_tracking_table.get_scientific_name_from_ensembl')
     def test_fill_from_eva_metadata_inserts_eva_entries(self, mock_sci_name, mock_ncbi, mock_get_all, mock_execute):
+        mock_sci_name.return_value = 'Oryza sativa'
         mock_ncbi.return_value.assembly_fasta_path = '/ref/fasta'
         mock_ncbi.return_value.assembly_report_path = '/ref/report'
         mock_get_all.side_effect = [
@@ -122,8 +125,9 @@ class TestReleaseTracker(TestCase):
     @patch('release_automation.create_release_tracking_table.execute_query')
     @patch('release_automation.create_release_tracking_table.get_all_results_for_query')
     @patch('release_automation.create_release_tracking_table.NCBIAssembly')
-    @patch('release_automation.create_release_tracking_table.get_scientific_name_from_ensembl', return_value='Oryza sativa')
+    @patch('release_automation.create_release_tracking_table.get_scientific_name_from_ensembl')
     def test_fill_from_supported_assembly_tracker(self, mock_sci_name, mock_ncbi, mock_get_all, mock_execute):
+        mock_sci_name.return_value = 'Oryza sativa'
         mock_ncbi.return_value.assembly_fasta_path = '/ref/fasta'
         mock_ncbi.return_value.assembly_report_path = '/ref/report'
         mock_get_all.side_effect = [
