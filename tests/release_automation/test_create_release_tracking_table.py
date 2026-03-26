@@ -24,7 +24,7 @@ def make_tracker(release_version=2):
     return tracker
 
 
-def assert_no_multispace(expected, actual):
+def assert_ignore_multispace(expected, actual):
     expected = re.sub(r'\s+', ' ', expected)
     actual = re.sub(r'\s+', ' ', actual)
     assert expected == actual, '\n' + actual + '\n' + expected
@@ -55,7 +55,7 @@ class TestReleaseTracker(TestCase):
         VALUES (4530, 'Oryza sativa', 'GCA_000005425.2', 2, 'EVA, DBSNP', 
         '/ref/GCA_000005425.2.fa', '/ref/GCA_000005425.2_report.txt', 'dummy', 'oryza_sativa') 
         ON CONFLICT DO NOTHING"""
-        assert_no_multispace(query, expected_query)
+        assert_ignore_multispace(query, expected_query)
 
 
     @patch('release_automation.create_release_tracking_table.execute_query')
@@ -73,11 +73,11 @@ class TestReleaseTracker(TestCase):
         expected_query = """select taxonomy, scientific_name, assembly_accession, fasta_path, report_path,
                     release_folder_name from eva_progress_tracker.clustering_release_tracker
                     where release_version = 1"""
-        assert_no_multispace(query, expected_query)
+        assert_ignore_multispace(query, expected_query)
         expected_query = """SELECT sources from eva_progress_tracker.clustering_release_tracker 
         where taxonomy = 4530 and assembly_accession='GCA_000005425.2' and release_version = 2"""
         query = mock_get_all.call_args_list[1][0][1]
-        assert_no_multispace(query, expected_query)
+        assert_ignore_multispace(query, expected_query)
 
         mock_execute.assert_called_once()
         query = mock_execute.call_args[0][1]
@@ -87,7 +87,7 @@ class TestReleaseTracker(TestCase):
         VALUES (4530, 'Oryza sativa', 'GCA_000005425.2', 2, 'EVA, DBSNP', 
         '/p/fasta', '/p/report', 'dummy', 'oryza_sativa') 
         ON CONFLICT DO NOTHING"""
-        assert_no_multispace(query, expected_query)
+        assert_ignore_multispace(query, expected_query)
 
     @patch('release_automation.create_release_tracking_table.execute_query')
     @patch('release_automation.create_release_tracking_table.get_all_results_for_query')
@@ -111,7 +111,7 @@ class TestReleaseTracker(TestCase):
                     join evapro.analysis a on a.analysis_accession = pa.analysis_accession
                     join evapro.assembly asm on asm.assembly_set_id = a.assembly_set_id
                     and asm.assembly_accession is not null and assembly_accession like 'GCA%'"""
-        assert_no_multispace(metadata_query, expected_select)
+        assert_ignore_multispace(metadata_query, expected_select)
 
         insert_query = mock_execute.call_args[0][1]
         expected_insert = """INSERT INTO eva_progress_tracker.clustering_release_tracker(
@@ -120,7 +120,7 @@ class TestReleaseTracker(TestCase):
                             VALUES (4530, 'Oryza sativa', 'GCA_000005425.2', 2, 'EVA, DBSNP',
                             '/ref/fasta', '/ref/report', 'dummy', 'oryza_sativa')
                             ON CONFLICT DO NOTHING"""
-        assert_no_multispace(insert_query, expected_insert)
+        assert_ignore_multispace(insert_query, expected_insert)
 
     @patch('release_automation.create_release_tracking_table.execute_query')
     @patch('release_automation.create_release_tracking_table.get_all_results_for_query')
@@ -140,7 +140,7 @@ class TestReleaseTracker(TestCase):
         tracker_query = mock_get_all.call_args_list[0][0][1]
         expected_select = """select distinct taxonomy_id as taxonomy, assembly_id as assembly_accession
                     from evapro.supported_assembly_tracker"""
-        assert_no_multispace(tracker_query, expected_select)
+        assert_ignore_multispace(tracker_query, expected_select)
 
         insert_query = mock_execute.call_args[0][1]
         expected_insert = """INSERT INTO eva_progress_tracker.clustering_release_tracker(
@@ -149,7 +149,7 @@ class TestReleaseTracker(TestCase):
                             VALUES (4530, 'Oryza sativa', 'GCA_000005425.2', 2, 'EVA, DBSNP',
                             '/ref/fasta', '/ref/report', 'dummy', 'oryza_sativa')
                             ON CONFLICT DO NOTHING"""
-        assert_no_multispace(insert_query, expected_insert)
+        assert_ignore_multispace(insert_query, expected_insert)
 
     @patch('release_automation.create_release_tracking_table.execute_query')
     @patch('release_automation.create_release_tracking_table.get_all_results_for_query')
@@ -164,18 +164,18 @@ class TestReleaseTracker(TestCase):
 
         release_rs_query = mock_get_all.call_args_list[0][0][1]
         expected_release_rs_query = """select release_date from eva_stats.release_rs where release_version=1;"""
-        assert_no_multispace(release_rs_query, expected_release_rs_query)
+        assert_ignore_multispace(release_rs_query, expected_release_rs_query)
 
         clustered_update_query = mock_get_all.call_args_list[1][0][1]
         expected_clustered_query = """select distinct taxonomy_id, assembly_accession from clustered_variant_update
                 where ingestion_time>'2000-01-01'; """
-        assert_no_multispace(clustered_update_query, expected_clustered_query)
+        assert_ignore_multispace(clustered_update_query, expected_clustered_query)
 
         executed_query = mock_execute.call_args[0][1]
         expected_update = """update eva_progress_tracker.clustering_release_tracker
                         set should_be_released=True, num_rs_to_release=1
                         where taxonomy=4530 and assembly_accession='GCA_000005425.2' and release_version=2"""
-        assert_no_multispace(executed_query, expected_update)
+        assert_ignore_multispace(executed_query, expected_update)
 
     @patch('release_automation.create_release_tracking_table.execute_query')
     @patch('release_automation.create_release_tracking_table.get_all_results_for_query')
@@ -191,13 +191,13 @@ class TestReleaseTracker(TestCase):
         clustered_update_query = mock_get_all.call_args_list[1][0][1]
         expected_clustered_query = """select distinct taxonomy_id, assembly_accession from clustered_variant_update
                 where ingestion_time>'2024-06-15'; """
-        assert_no_multispace(clustered_update_query, expected_clustered_query)
+        assert_ignore_multispace(clustered_update_query, expected_clustered_query)
 
         executed_query = mock_execute.call_args[0][1]
         expected_update = """update eva_progress_tracker.clustering_release_tracker
                         set should_be_released=True, num_rs_to_release=1
                         where taxonomy=9606 and assembly_accession='GCA_000001405.15' and release_version=2"""
-        assert_no_multispace(executed_query, expected_update)
+        assert_ignore_multispace(executed_query, expected_update)
 
 
     @patch('release_automation.create_release_tracking_table.execute_query')
@@ -208,7 +208,7 @@ class TestReleaseTracker(TestCase):
         expected_update = """update eva_progress_tracker.clustering_release_tracker
                         set should_be_released=True, num_rs_to_release=1
                         where taxonomy=4530 and assembly_accession='GCA_000005425.2' and release_version=2"""
-        assert_no_multispace(query, expected_update)
+        assert_ignore_multispace(query, expected_update)
 
 
 class SQLiteCompatibleCursor:

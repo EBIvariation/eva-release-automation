@@ -1,4 +1,4 @@
-name: Trigger Eva Assembly Ingestion Integration Tests
+name: Trigger Eva Release automation Integration Tests
 
 on:
   push:
