@@ -108,7 +108,7 @@ class TestPublishReleaseFilesToFTP(TestCase):
         curr_folder = get_folder_path_for_assembly(
             self.release_properties.public_ftp_current_release_folder, ASSEMBLY_ACCESSION)
         self.assertTrue(os.path.isdir(curr_folder))
-        for filename in get_release_file_list_for_assembly(self.assembly_info):
+        for filename in get_release_file_list_for_assembly(self.assembly_info) + ['md5checksums.txt']:
             curr_file = os.path.join(curr_folder, filename)
             prev_file = os.path.join(prev_folder, filename)
             self.assertTrue(os.path.exists(curr_file), f"Expected {filename} to be hard-linked")
