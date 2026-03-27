@@ -1,2 +1,0 @@
-# Sequence-Name	Sequence-Role	Assigned-Molecule	Assigned-Molecule-Location/Type	GenBank-Accn	Relationship	RefSeq-Accn	Assembly-Unit	Sequence-Length	UCSC-style-name
-1	assembled-molecule	1	Chromosome	AP008207.2	=	NC_008394.4	Primary Assembly	45064769	na
