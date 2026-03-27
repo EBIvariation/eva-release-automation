@@ -2,7 +2,6 @@ import glob
 import os
 import xml.etree.ElementTree
 
-import click
 import requests
 from ebi_eva_common_pyutils.logger import logging_config
 
@@ -42,10 +41,12 @@ def make_valid_filename_without_spaces(file_name):
 def add_assembly_name_symlink_for_dir(assembly_accession_release_dir):
     parent_dir = os.path.dirname(assembly_accession_release_dir)
     assembly_accession = os.path.basename(assembly_accession_release_dir)
-    target_dir_to_create = parent_dir + os.path.sep + \
-                           make_valid_filename_without_spaces(get_assembly_name_for_accession(assembly_accession))
-    logger.info('Creating symlink: "{0}" to {1}'.format(target_dir_to_create, assembly_accession_release_dir))
-    os.system('cd {0} && ln -sfT {1} "{2}"'.format(parent_dir, assembly_accession, target_dir_to_create))
+    target_dir_to_create = os.path.join(
+        parent_dir, make_valid_filename_without_spaces(get_assembly_name_for_accession(assembly_accession)))
+    logger.info(f'Creating symlink: "{target_dir_to_create}" to {assembly_accession_release_dir}')
+    if os.path.islink(target_dir_to_create) or os.path.exists(target_dir_to_create):
+        os.remove(target_dir_to_create)
+    os.symlink(assembly_accession, target_dir_to_create)
 
 
 def create_assembly_name_symlinks(species_dir):
@@ -53,13 +54,3 @@ def create_assembly_name_symlinks(species_dir):
         add_assembly_name_symlink_for_dir(assembly_dir)
 
 
-@click.command()
-@click.argument("by_species_dir", nargs=1, type=click.Path(exists=True, resolve_path=True, readable=True))
-def main(by_species_dir):
-    for dirinfo in os.walk(by_species_dir):
-        species_dir = dirinfo[0]
-        create_assembly_name_symlinks(species_dir)
-
-
-if __name__ == '__main__':
-    main()

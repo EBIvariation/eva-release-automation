@@ -10,6 +10,7 @@ setup(name='eva_release_automation',
       version='0.1.2.dev0',
       packages=find_packages(),
       package_data={
+          'publish_release_to_ftp': ['README_*'],
           'run_release_in_embassy': ['nextflow/*'],
           'release_automation': ['nextflow/*'],
           'gather_clustering_counts': ['bash/*'] },
