@@ -163,7 +163,7 @@ class TestReleaseTracker(TestCase):
         self.tracker.fill_should_be_released_from_clustered_variant_update()
 
         release_rs_query = mock_get_all.call_args_list[0][0][1]
-        expected_release_rs_query = """select release_date from eva_stats.release_rs where release_version=1;"""
+        expected_release_rs_query = """select release_date, release_version from eva_stats.release_rs where release_version=1;"""
         assert_ignore_multispace(release_rs_query, expected_release_rs_query)
 
         clustered_update_query = mock_get_all.call_args_list[1][0][1]

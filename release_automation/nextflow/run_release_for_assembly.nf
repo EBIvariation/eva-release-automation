@@ -39,7 +39,7 @@ workflow {
     count_rs_ids_in_release_txt(merge_deprecated_chunks.out.release_deprecated)
     merge_count_files(count_rs_ids_in_release_vcf.out.count_vcf.collect(), count_rs_ids_in_release_txt.out.count_txt)
 
-    update_release_status_for_assembly(merge_count_files.out.readme_count)
+    update_release_status_for_assembly(merge_count_files.out.readme_count, analyze_vcf_validator_results.out.flag.collect(), analyze_assembly_checker_results.out.flag.collect())
 }
 
 
@@ -517,6 +517,8 @@ process update_release_status_for_assembly {
 
     input:
     path readme_count
+    val vcf_validator_flags
+    val assembly_checker_flags
 
     output:
     val true, emit: flag

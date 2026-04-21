@@ -69,7 +69,7 @@ def get_release_java_props(assembly_release_folder, assembly_accession, taxonomy
     output_file = f"{assembly_release_folder}/{assembly_accession}_{file_name}.properties"
     private_config_xml_file = cfg.query("maven", "settings_file")
     profile = cfg.query("maven", "environment")
-    release_species_inventory_table = release_species_inventory_table = cfg.query('release', 'inventory_table')
+    release_species_inventory_table = cfg.query('release', 'inventory_table')
     with get_metadata_connection_handle(profile, private_config_xml_file) as metadata_connection_handle:
         release_properties = get_release_inventory_info_for_assembly(taxonomy_id, assembly_accession, release_species_inventory_table,
                                                 release_version, metadata_connection_handle)
