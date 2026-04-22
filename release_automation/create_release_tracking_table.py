@@ -15,7 +15,6 @@
 import argparse
 from collections import defaultdict
 from functools import cached_property
-from itertools import cycle
 
 from ebi_eva_common_pyutils.assembly import NCBIAssembly
 from ebi_eva_common_pyutils.config import cfg
@@ -137,7 +136,7 @@ class ReleaseTracker(AppLogger):
         # Old date to include everything unless we find a previous release
         last_release_date = '2000-01-01'
 
-        query = f'''select release_date from eva_stats.release_rs where release_version={self.release_version -1};'''
+        query = f'''select release_date, release_version from eva_stats.release_rs where release_version={self.release_version - 1};'''
         results = list(get_all_results_for_query(self.metadata_conn, query))
         if results:
             last_release_date, last_release_version = results[0]
