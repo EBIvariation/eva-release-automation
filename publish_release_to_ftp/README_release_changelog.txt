@@ -2,6 +2,11 @@ This document describes technical changes associated with the EVA RefSNP release
 EVA RefSNP release 8
 ====================
 
+- No significant change
+
+EVA RefSNP release 8
+====================
+
 - Merged deprecated are no longer in a separate file: The file containing the list of rs that were merged into another
   rs that were later deprecated is now only available in the list of deprecated rs not as an independent file
 
