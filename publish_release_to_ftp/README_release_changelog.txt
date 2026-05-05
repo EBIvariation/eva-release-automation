@@ -1,4 +1,9 @@
 This document describes technical changes associated with the EVA RefSNP release.
+EVA RefSNP release 9
+====================
+
+- No significant change
+
 EVA RefSNP release 8
 ====================
 

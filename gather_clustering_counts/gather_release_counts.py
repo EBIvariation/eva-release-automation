@@ -2,6 +2,7 @@ import argparse
 import csv
 import glob
 import os
+import re
 from collections import defaultdict, Counter
 from functools import lru_cache, cached_property
 from urllib.parse import urlsplit
@@ -23,6 +24,7 @@ logger = logging_config.get_logger(__name__)
 shell_script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bash')
 
 assembly_table_name = 'eva_stats.release_rs_statistics_per_assembly'
+assembly_accession_pattern = re.compile(r'^GCA_\d{9}\.\d$')
 
 
 def find_link(key_set, dict1, dict2, source_linked_set1=None, source_linked_set2=None):
@@ -102,6 +104,10 @@ def collect_files_to_count(release_directory, set_of_species):
         species_dir = os.path.join(release_directory, species)
         assembly_directories = glob.glob(os.path.join(species_dir, "GCA_*"))
         for assembly_dir in assembly_directories:
+            dir_basename = os.path.basename(assembly_dir)
+            if not assembly_accession_pattern.match(dir_basename):
+                logger.warning(f'{dir_basename} is not a valid GCA so will not be included in the count')
+                continue
             vcf_pattern = f'*GCA_*_ids.vcf.gz'
             vcf_files = glob.glob(os.path.join(assembly_dir, vcf_pattern))
             txt_pattern = f'*GCA_*_ids.txt.gz'
