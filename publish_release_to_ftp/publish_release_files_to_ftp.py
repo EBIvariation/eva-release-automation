@@ -19,6 +19,7 @@
 import glob
 import gzip
 import hashlib
+import logging
 import os
 import shutil
 from argparse import ArgumentParser
@@ -191,12 +192,16 @@ def create_public_release_assembly_folder_if_not_exists(assembly_accession, publ
         os.makedirs(public_release_assembly_folder, exist_ok=True)
 
 
-def hardlink_to_previous_release_assembly_files_in_ftp(current_release_assembly_info, release_properties):
+def hardlink_to_previous_release_assembly_files_in_ftp(current_release_assembly_info, species_current_release_folder_name, release_properties):
     assembly_accession = current_release_assembly_info["assembly_accession"]
+    assembly_accession = current_release_assembly_info["assembly_accession"]
+
     public_current_release_assembly_folder = \
-        get_folder_path_for_assembly(release_properties.public_ftp_current_release_folder, assembly_accession)
+        get_folder_path_for_species_assembly(release_properties.public_ftp_current_release_folder,
+                                             species_current_release_folder_name, assembly_accession)
     public_previous_release_assembly_folder = \
-        get_folder_path_for_assembly(release_properties.public_ftp_previous_release_folder, assembly_accession)
+        get_folder_path_for_species_assembly(release_properties.public_ftp_previous_release_folder,
+                                             species_current_release_folder_name, assembly_accession)
 
     if os.path.exists(public_previous_release_assembly_folder):
         recreate_folder(public_current_release_assembly_folder)
@@ -210,6 +215,8 @@ def hardlink_to_previous_release_assembly_files_in_ftp(current_release_assembly_
                 if os.path.exists(dest_file):
                     os.remove(dest_file)
                 os.link(file_to_hardlink, dest_file)
+            else:
+                logging.warning(f'Could not link to previous release files {file_to_hardlink}')
     else:
         logger.error(f"Previous release folder {public_previous_release_assembly_folder} does not exist "
                         f"for assembly!")
@@ -239,7 +246,7 @@ def publish_assembly_release_files_to_ftp(current_release_assembly_info, release
                 os.remove(link_path)
             os.symlink(os.path.join(relpath, readme_file), link_path)
     else:
-        hardlink_to_previous_release_assembly_files_in_ftp(current_release_assembly_info, release_properties)
+        hardlink_to_previous_release_assembly_files_in_ftp(current_release_assembly_info, species_current_release_folder_name, release_properties)
 
 
     # Create a link from assembly folder to species_folder ex: by_assembly/GCA_000005005.5/zea_mays to by_species/zea_mays/GCA_000005005.5

@@ -7,7 +7,7 @@ from ebi_eva_internal_pyutils.pg_utils import execute_query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from gather_clustering_counts.gather_release_counts import find_link, ReleaseCounter
+from gather_clustering_counts.gather_release_counts import collect_files_to_count, find_link, ReleaseCounter
 from gather_clustering_counts.release_count_models import RSCountPerTaxonomy, RSCountPerAssembly, RSCountCategory, \
     RSCount, RSCountPerTaxonomyAssembly
 
@@ -32,6 +32,22 @@ def test_find_links():
     assert find_link({'C'}, d1, d2) == (frozenset({'C'}), frozenset({'3', '4'}))
     assert find_link({'D'}, d1, d2) == (frozenset({'A', 'B', 'D'}), frozenset({'1', '2', '5'}))
     assert find_link({'E'}, d1, d2) == (frozenset({'E'}), frozenset({}))
+
+
+def test_collect_files_to_count_skips_assembly_directory_without_version(tmp_path):
+    species = 'some_species'
+    release_directory = tmp_path / 'release'
+    valid_assembly_dir = release_directory / species / 'GCA_013265735.3'
+    invalid_assembly_dir = release_directory / species / 'GCA_013265735'
+
+    valid_assembly_dir.mkdir(parents=True)
+    invalid_assembly_dir.mkdir(parents=True)
+    valid_file = valid_assembly_dir / 'some_species_GCA_013265735_ids.vcf.gz'
+    invalid_file = invalid_assembly_dir / 'some_species_GCA_013265735_ids.vcf.gz'
+    valid_file.write_text('')
+    invalid_file.write_text('')
+
+    assert collect_files_to_count(str(release_directory), {species}) == [str(valid_file)]
 
 
 class TestReleaseCounter(TestCase):
