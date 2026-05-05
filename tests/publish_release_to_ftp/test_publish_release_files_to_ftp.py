@@ -64,8 +64,8 @@ class TestPublishReleaseFilesToFTP(TestCase):
 
     def _create_previous_assembly_folder(self):
         """Create previous-release assembly folder with all expected files."""
-        prev_folder = get_folder_path_for_assembly(
-            self.release_properties.public_ftp_previous_release_folder, ASSEMBLY_ACCESSION)
+        prev_folder = get_folder_path_for_species_assembly(
+            self.release_properties.public_ftp_previous_release_folder, SPECIES_FOLDER, ASSEMBLY_ACCESSION)
         os.makedirs(prev_folder, exist_ok=True)
         for filename in get_release_file_list_for_assembly(self.assembly_info) + ['md5checksums.txt']:
             with open(os.path.join(prev_folder, filename), 'w') as f:
@@ -103,10 +103,10 @@ class TestPublishReleaseFilesToFTP(TestCase):
     def test_hardlink_to_previous_release_assembly_files_in_ftp(self):
         prev_folder = self._create_previous_assembly_folder()
 
-        hardlink_to_previous_release_assembly_files_in_ftp(self.assembly_info, self.release_properties)
+        hardlink_to_previous_release_assembly_files_in_ftp(self.assembly_info, SPECIES_FOLDER, self.release_properties)
 
-        curr_folder = get_folder_path_for_assembly(
-            self.release_properties.public_ftp_current_release_folder, ASSEMBLY_ACCESSION)
+        curr_folder = get_folder_path_for_species_assembly(
+            self.release_properties.public_ftp_current_release_folder, SPECIES_FOLDER, ASSEMBLY_ACCESSION)
         self.assertTrue(os.path.isdir(curr_folder))
         for filename in get_release_file_list_for_assembly(self.assembly_info) + ['md5checksums.txt']:
             curr_file = os.path.join(curr_folder, filename)
@@ -115,10 +115,12 @@ class TestPublishReleaseFilesToFTP(TestCase):
             self.assertEqual(os.stat(curr_file).st_ino, os.stat(prev_file).st_ino,
                              f"{filename} should share inode with previous release copy")
 
-    def test_hardlink_raises_when_previous_release_missing(self):
-        with self.assertRaises(Exception) as ctx:
-            hardlink_to_previous_release_assembly_files_in_ftp(self.assembly_info, self.release_properties)
-        self.assertIn('does not exist', str(ctx.exception))
+    def test_hardlink_logs_when_previous_release_missing(self):
+        with self.assertLogs('publish_release_to_ftp.publish_release_files_to_ftp', level='ERROR') as ctx:
+            hardlink_to_previous_release_assembly_files_in_ftp(
+                self.assembly_info, SPECIES_FOLDER, self.release_properties)
+
+        self.assertIn('does not exist', ctx.output[0])
 
     # ------------------------------------------------------------------
     # copy_current_assembly_data_to_ftp
@@ -216,12 +218,14 @@ class TestPublishReleaseFilesToFTP(TestCase):
         prev_folder = self._create_previous_assembly_folder()
         current_release = self.release_properties.public_ftp_current_release_folder
         assembly_folder = get_folder_path_for_assembly(current_release, ASSEMBLY_ACCESSION)
+        os.makedirs(assembly_folder, exist_ok=True)
         assembly_info = make_assembly_info(should_be_released=False, num_rs_to_release=0)
 
         publish_assembly_release_files_to_ftp(
             assembly_info, self.release_properties, assembly_folder, SPECIES_FOLDER)
 
-        curr_assembly_folder = get_folder_path_for_assembly(current_release, ASSEMBLY_ACCESSION)
+        curr_assembly_folder = get_folder_path_for_species_assembly(current_release, SPECIES_FOLDER,
+                                                                    ASSEMBLY_ACCESSION)
         self.assertTrue(os.path.isdir(curr_assembly_folder))
         for filename in get_release_file_list_for_assembly(assembly_info):
             curr_file = os.path.join(curr_assembly_folder, filename)
@@ -268,12 +272,14 @@ class TestPublishReleaseFilesToFTP(TestCase):
         prev_folder = self._create_previous_assembly_folder()
         current_release = self.release_properties.public_ftp_current_release_folder
         assembly_folder = get_folder_path_for_assembly(current_release, ASSEMBLY_ACCESSION)
+        os.makedirs(assembly_folder, exist_ok=True)
         assembly_info = make_assembly_info(should_be_released=False, num_rs_to_release=0)
 
         publish_assembly_release_files_to_ftp(
             assembly_info, self.release_properties, assembly_folder, SPECIES_FOLDER)
 
-        curr_assembly_folder = get_folder_path_for_assembly(current_release, ASSEMBLY_ACCESSION)
+        curr_assembly_folder = get_folder_path_for_species_assembly(current_release, SPECIES_FOLDER,
+                                                                    ASSEMBLY_ACCESSION)
         self.assertTrue(os.path.isdir(curr_assembly_folder))
         for filename in get_release_file_list_for_assembly(assembly_info):
             curr_file = os.path.join(curr_assembly_folder, filename)
