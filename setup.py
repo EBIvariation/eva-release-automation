@@ -7,7 +7,7 @@ requirements_txt = join(base_dir, 'requirements.txt')
 requirements = [l.strip() for l in open(requirements_txt) if l and not l.startswith('#')]
 
 setup(name='eva_release_automation',
-      version='0.3.0',
+      version='0.3.1.dev0',
       packages=find_packages(),
       package_data={
           'publish_release_to_ftp': ['README_*'],
