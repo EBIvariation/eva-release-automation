@@ -6,6 +6,7 @@ from unittest import TestCase
 from unittest.mock import patch
 
 from publish_release_to_ftp.publish_release_files_to_ftp import (
+    all_release_data_files_empty,
     copy_current_assembly_data_to_ftp,
     copy_current_unmapped_files,
     hardlink_previous_unmapped_files,
@@ -34,6 +35,15 @@ def make_assembly_info(should_be_released=True, num_rs_to_release=10):
         'should_be_released': should_be_released,
         'num_rs_to_release': num_rs_to_release,
     }
+
+
+def write_release_file(file_path, content):
+    if file_path.endswith('.gz'):
+        with gzip.open(file_path, 'wt') as f:
+            f.write(content)
+    else:
+        with open(file_path, 'w') as f:
+            f.write(content)
 
 
 def make_release_properties(tmp_dir, release_version=RELEASE_VERSION):
@@ -68,18 +78,16 @@ class TestPublishReleaseFilesToFTP(TestCase):
             self.release_properties.public_ftp_previous_release_folder, SPECIES_FOLDER, ASSEMBLY_ACCESSION)
         os.makedirs(prev_folder, exist_ok=True)
         for filename in get_release_file_list_for_assembly(self.assembly_info) + ['md5checksums.txt']:
-            with open(os.path.join(prev_folder, filename), 'w') as f:
-                f.write('Previous release')
+            write_release_file(os.path.join(prev_folder, filename), 'Previous release')
         return prev_folder
 
-    def _create_staging_assembly_folder(self):
+    def _create_staging_assembly_folder(self, content='New release'):
         """Create staging folder with all expected files for an assembly."""
         staging = os.path.join(
             self.release_properties.staging_release_folder, SPECIES_FOLDER, ASSEMBLY_ACCESSION)
         os.makedirs(staging, exist_ok=True)
         for filename in get_release_file_list_for_assembly(self.assembly_info):
-            with open(os.path.join(staging, filename), 'w') as f:
-                f.write('New release')
+            write_release_file(os.path.join(staging, filename), content)
         return staging
 
     # ------------------------------------------------------------------
@@ -289,3 +297,46 @@ class TestPublishReleaseFilesToFTP(TestCase):
                              f"{filename} should share inode with previous release (hard link)")
             self.assertGreater(os.stat(curr_file).st_nlink, 1,
                                f"{filename} nlink should be > 1")
+
+    # ------------------------------------------------------------------
+    # Skip assemblies where all release files are empty
+    # ------------------------------------------------------------------
+
+    def test_all_release_data_files_empty(self):
+        staging = self._create_staging_assembly_folder(content='##fileformat=VCFv4.2\n#CHROM\tPOS\n')
+        self.assertTrue(all_release_data_files_empty(self.assembly_info, staging))
+
+        write_release_file(os.path.join(staging, f'{TAXONOMY}_{ASSEMBLY_ACCESSION}_deprecated_ids.txt.gz'),
+                           'rs123\n')
+        self.assertFalse(all_release_data_files_empty(self.assembly_info, staging))
+
+    @patch('publish_release_to_ftp.publish_release_files_to_ftp.get_release_folder_name',
+           return_value=SPECIES_FOLDER)
+    def test_publish_assembly_release_files_to_ftp_skips_empty_released_assembly(self, _mock_grf):
+        self._create_staging_assembly_folder(content='##fileformat=VCFv4.2\n')
+        current_release = self.release_properties.public_ftp_current_release_folder
+        assembly_folder = get_folder_path_for_assembly(current_release, ASSEMBLY_ACCESSION)
+
+        publish_assembly_release_files_to_ftp(
+            self.assembly_info, self.release_properties, assembly_folder, SPECIES_FOLDER)
+
+        self.assertFalse(os.path.exists(assembly_folder))
+        self.assertFalse(os.path.exists(
+            get_folder_path_for_species_assembly(current_release, SPECIES_FOLDER, ASSEMBLY_ACCESSION)))
+
+    def test_publish_assembly_release_files_to_ftp_skips_empty_previous_assembly(self):
+        prev_folder = get_folder_path_for_species_assembly(
+            self.release_properties.public_ftp_previous_release_folder, SPECIES_FOLDER, ASSEMBLY_ACCESSION)
+        os.makedirs(prev_folder)
+        for filename in get_release_file_list_for_assembly(self.assembly_info):
+            write_release_file(os.path.join(prev_folder, filename), '')
+        current_release = self.release_properties.public_ftp_current_release_folder
+        assembly_folder = get_folder_path_for_assembly(current_release, ASSEMBLY_ACCESSION)
+        assembly_info = make_assembly_info(should_be_released=False, num_rs_to_release=0)
+
+        publish_assembly_release_files_to_ftp(
+            assembly_info, self.release_properties, assembly_folder, SPECIES_FOLDER)
+
+        self.assertFalse(os.path.exists(assembly_folder))
+        self.assertFalse(os.path.exists(
+            get_folder_path_for_species_assembly(current_release, SPECIES_FOLDER, ASSEMBLY_ACCESSION)))

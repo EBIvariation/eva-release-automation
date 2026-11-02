@@ -129,6 +129,26 @@ def get_release_file_list_for_assembly(release_assembly_info):
     return sorted(release_file_list)
 
 
+def file_has_data(file_path):
+    """Return True if the gzipped release file contains at least one non-header line."""
+    with gzip.open(file_path, 'rt') as f:
+        return any(line.strip() and not line.startswith('#') for line in f)
+
+
+def all_release_data_files_empty(release_assembly_info, source_folder):
+    """
+    Return True if every release data file (VCF and text) for the assembly exists in source_folder and contains no data.
+    Missing files are not considered empty so that they are handled by the downstream copy/hardlink steps.
+    """
+    data_files = [os.path.join(source_folder, filename)
+                  for filename in get_release_file_list_for_assembly(release_assembly_info)
+                  if filename.endswith(("vcf.gz", "txt.gz"))]
+    return all(
+        os.path.exists(data_file) and not file_has_data(data_file)
+        for data_file in data_files
+    )
+
+
 def get_folder_path_for_assembly(release_folder_base, assembly_accession):
     return os.path.join(release_folder_base, by_assembly_folder_name, assembly_accession)
 
@@ -194,7 +214,6 @@ def create_public_release_assembly_folder_if_not_exists(assembly_accession, publ
 
 def hardlink_to_previous_release_assembly_files_in_ftp(current_release_assembly_info, species_current_release_folder_name, release_properties):
     assembly_accession = current_release_assembly_info["assembly_accession"]
-    assembly_accession = current_release_assembly_info["assembly_accession"]
 
     public_current_release_assembly_folder = \
         get_folder_path_for_species_assembly(release_properties.public_ftp_current_release_folder,
@@ -228,9 +247,24 @@ def publish_assembly_release_files_to_ftp(current_release_assembly_info, release
     public_release_species_assembly_folder = \
         get_folder_path_for_species_assembly(release_properties.public_ftp_current_release_folder,
                                              species_current_release_folder_name, assembly_accession)
+    released_in_current_release = current_release_assembly_info["should_be_released"] and \
+        current_release_assembly_info["num_rs_to_release"] > 0
+    if released_in_current_release:
+        source_folder = os.path.join(release_properties.staging_release_folder,
+                                     get_release_folder_name(current_release_assembly_info['taxonomy']),
+                                     assembly_accession)
+    else:
+        source_folder = get_folder_path_for_species_assembly(release_properties.public_ftp_previous_release_folder,
+                                                             species_current_release_folder_name, assembly_accession)
+    if all_release_data_files_empty(current_release_assembly_info, source_folder):
+        logger.warning(f"All release files for assembly {assembly_accession} in {source_folder} are empty. "
+                       f"Skipping publication to FTP.")
+        return
+
+    create_public_release_assembly_folder_if_not_exists(assembly_accession, public_release_assembly_folder)
+
     # If a species was processed during this release, copy current release data to FTP
-    if current_release_assembly_info["should_be_released"] and \
-            current_release_assembly_info["num_rs_to_release"] > 0:
+    if released_in_current_release:
         copy_current_assembly_data_to_ftp(current_release_assembly_info, release_properties,
                                           public_release_species_assembly_folder)
 
@@ -370,8 +404,6 @@ def publish_release_files_to_ftp(release_version, taxonomy_id):
                 assembly_accession = current_release_assembly_info["assembly_accession"]
                 public_release_assembly_folder = get_folder_path_for_assembly(
                     release_properties.public_ftp_current_release_folder, assembly_accession)
-                create_public_release_assembly_folder_if_not_exists(assembly_accession, public_release_assembly_folder)
-
                 publish_assembly_release_files_to_ftp(current_release_assembly_info, release_properties,
                                                       public_release_assembly_folder,
                                                       species_current_release_folder_name)
