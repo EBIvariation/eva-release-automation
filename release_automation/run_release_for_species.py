@@ -110,7 +110,13 @@ def get_release_folder(release_version):
 
 @lru_cache
 def get_species_release_folder(release_version, taxonomy_id):
-    folder = os.path.join(get_release_folder(release_version), get_release_folder_name(taxonomy_id))
+    private_config_xml_file = cfg.query("maven", "settings_file")
+    profile = cfg.query("maven", "environment")
+    release_species_inventory_table = cfg.query('release', 'inventory_table')
+    with get_metadata_connection_handle(profile, private_config_xml_file) as metadata_connection_handle:
+        release_folder_name = get_release_folder_name(taxonomy_id, release_version, release_species_inventory_table,
+                                                      metadata_connection_handle)
+    folder = os.path.join(get_release_folder(release_version), release_folder_name)
     os.makedirs(folder, exist_ok=True)
     return folder
 

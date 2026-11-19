@@ -134,9 +134,7 @@ class TestPublishReleaseFilesToFTP(TestCase):
     # copy_current_assembly_data_to_ftp
     # ------------------------------------------------------------------
 
-    @patch('publish_release_to_ftp.publish_release_files_to_ftp.get_release_folder_name',
-           return_value=SPECIES_FOLDER)
-    def test_copy_current_assembly_data_to_ftp(self, _mock_grf):
+    def test_copy_current_assembly_data_to_ftp(self):
         self._create_staging_assembly_folder()
         dest_folder = get_folder_path_for_species_assembly(
             self.release_properties.public_ftp_current_release_folder, SPECIES_FOLDER, ASSEMBLY_ACCESSION)
@@ -202,9 +200,7 @@ class TestPublishReleaseFilesToFTP(TestCase):
     # publish_assembly_release_files_to_ftp
     # ------------------------------------------------------------------
 
-    @patch('publish_release_to_ftp.publish_release_files_to_ftp.get_release_folder_name',
-           return_value=SPECIES_FOLDER)
-    def test_publish_assembly_release_files_to_ftp_released(self, _mock_grf):
+    def test_publish_assembly_release_files_to_ftp_released(self):
         self._create_staging_assembly_folder()
         current_release = self.release_properties.public_ftp_current_release_folder
         assembly_folder = get_folder_path_for_assembly(current_release, ASSEMBLY_ACCESSION)
@@ -243,10 +239,8 @@ class TestPublishReleaseFilesToFTP(TestCase):
 
 
 
-    @patch('publish_release_to_ftp.publish_release_files_to_ftp.get_release_folder_name',
-           return_value=SPECIES_FOLDER)
     @patch('publish_release_to_ftp.publish_release_files_to_ftp.create_assembly_name_symlinks')
-    def test_full_publish_flow_released_assembly(self, _mock_symlinks, _mock_grf):
+    def test_full_publish_flow_released_assembly(self, _mock_symlinks):
         self._create_staging_assembly_folder()
         self._create_previous_assembly_folder()
 
@@ -310,9 +304,7 @@ class TestPublishReleaseFilesToFTP(TestCase):
                            'rs123\n')
         self.assertFalse(all_release_data_files_empty(self.assembly_info, staging))
 
-    @patch('publish_release_to_ftp.publish_release_files_to_ftp.get_release_folder_name',
-           return_value=SPECIES_FOLDER)
-    def test_publish_assembly_release_files_to_ftp_skips_empty_released_assembly(self, _mock_grf):
+    def test_publish_assembly_release_files_to_ftp_skips_empty_released_assembly(self):
         self._create_staging_assembly_folder(content='##fileformat=VCFv4.2\n')
         current_release = self.release_properties.public_ftp_current_release_folder
         assembly_folder = get_folder_path_for_assembly(current_release, ASSEMBLY_ACCESSION)
