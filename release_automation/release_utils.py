@@ -15,7 +15,6 @@ import datetime
 import os
 from functools import lru_cache
 
-from ebi_eva_common_pyutils.taxonomy import taxonomy
 from ebi_eva_internal_pyutils.pg_utils import get_all_results_for_query
 
 collections_assembly_attribute_map = {
@@ -115,5 +114,14 @@ def get_release_for_status_and_version(release_species_inventory_table, metadata
 
 
 @lru_cache
-def get_release_folder_name(taxonomy_id):
-    return taxonomy.get_normalized_scientific_name_from_ensembl(taxonomy_id)
+def get_release_folder_name(taxonomy_id, release_version, release_species_inventory_table, metadata_connection_handle):
+    """Get the species release folder name stored in the release tracking table."""
+    results = get_all_results_for_query(metadata_connection_handle,
+                                        f"select distinct release_folder_name from {release_species_inventory_table} "
+                                        f"where taxonomy = '{taxonomy_id}' and release_version = {release_version} "
+                                        f"and release_folder_name is not null")
+    if len(results) != 1:
+        raise Exception(f"Expected exactly one release folder name for taxonomy {taxonomy_id} and release "
+                        f"{release_version} in {release_species_inventory_table} but found "
+                        f"{[r[0] for r in results]}")
+    return results[0][0]

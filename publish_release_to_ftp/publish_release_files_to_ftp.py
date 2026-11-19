@@ -31,7 +31,6 @@ from ebi_eva_internal_pyutils.pg_utils import get_all_results_for_query
 
 from publish_release_to_ftp.create_assembly_name_symlinks import create_assembly_name_symlinks
 from release_automation.release_config import load_config
-from release_automation.release_utils import get_release_folder_name
 from release_automation.run_release_for_species import get_release_folder
 
 by_assembly_folder_name = "by_assembly"
@@ -191,7 +190,7 @@ def recreate_folder(folder):
 def copy_current_assembly_data_to_ftp(current_release_assembly_info, release_properties,
                                       public_release_species_assembly_folder):
     assembly_accession = current_release_assembly_info["assembly_accession"]
-    species_release_source_folder_name = get_release_folder_name(current_release_assembly_info['taxonomy'])
+    species_release_source_folder_name = current_release_assembly_info['release_folder_name']
     md5sum_output_file = os.path.join(public_release_species_assembly_folder, "md5checksums.txt")
 
     recreate_folder(public_release_species_assembly_folder)
@@ -251,7 +250,7 @@ def publish_assembly_release_files_to_ftp(current_release_assembly_info, release
         current_release_assembly_info["num_rs_to_release"] > 0
     if released_in_current_release:
         source_folder = os.path.join(release_properties.staging_release_folder,
-                                     get_release_folder_name(current_release_assembly_info['taxonomy']),
+                                     current_release_assembly_info['release_folder_name'],
                                      assembly_accession)
     else:
         source_folder = get_folder_path_for_species_assembly(release_properties.public_ftp_previous_release_folder,
